@@ -34,7 +34,9 @@ jobs:
       - name: Prepare Deployment Directory
         run: mkdir -p site
 
+      
       - name: Collect Available Post Reads
+        shell: bash
         run: |
           for i in {1..12}
           do
@@ -47,11 +49,11 @@ jobs:
 
               mkdir -p "site/$BRANCH"
 
-              git archive "origin/$BRANCH" \
+              git archive "refs/remotes/origin/$BRANCH" \
                 | tar -x -C "site/$BRANCH"
 
             else
-              echo "Skipping $BRANCH - branch not created yet"
+              echo "Skipping $BRANCH - branch does not exist yet"
             fi
           done
 
