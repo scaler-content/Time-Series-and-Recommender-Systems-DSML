@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TS & RS: Taking Time Apart</title>
+<style>
+
+:root{
+  --bg:#F1E8D6; --paper:#FAF4E6; --card:#FFFBF1; --sand:#E7DBC2; --line:#D6C7A9;
+  --ink:#33291E; --muted:#66573F; --brown:#5B4330; --deep:#3B2A1C;
+  --orange:#B8530F; --orange-ink:#9C4509; --orange-btn:#A84A0B; --orange-2:#D9792B; --amber:#E3A94B; --tint:#F5DDBD; --tint-2:#FBEBD3; --rust:#8A3410;
+  --radius:14px; --shadow:0 1px 2px rgba(59,42,28,.08),0 6px 18px rgba(59,42,28,.06);
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7}
+a{color:var(--orange-ink)}
+:focus-visible{outline:3px solid var(--orange-2);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top nav */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,244,230,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.topbar nav{max-width:1080px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:thin}
+.topbar a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px}
+.topbar a:hover{background:var(--tint-2);color:var(--orange-ink)}
+.topbar a.active{background:var(--orange-btn);color:#fff}
+.progress{height:3px;background:transparent}
+.progress i{display:block;height:100%;width:0;background:var(--orange-2)}
+
+/* hero */
+.hero{background:var(--deep);color:#F3E7D0;padding:72px 20px 64px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,121,43,.35),rgba(217,121,43,0) 70%)}
+.hero .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.hero h1{font-family:var(--serif);font-size:clamp(32px,5.4vw,54px);line-height:1.12;margin:12px 0 18px;font-weight:700;color:#FFF6E4}
+.hero p{font-size:19px;max-width:700px;color:#E6D6B8;margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid rgba(243,231,208,.35);border-radius:999px;padding:4px 14px;font-size:14px;color:#F3E7D0}
+
+/* layout */
+main{max-width:860px;margin:0 auto;padding:12px 20px 60px}
+section{padding-top:48px}
+section>h2{font-family:var(--serif);font-size:clamp(26px,3.6vw,34px);line-height:1.2;margin:0 0 6px;color:var(--deep)}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-ink)}
+h3{font-family:var(--serif);font-size:22px;margin:34px 0 8px;color:var(--deep)}
+h4{margin:20px 0 6px;font-size:17px;color:var(--brown)}
+p{margin:0 0 14px}
+ul,ol{padding-left:22px;margin:0 0 14px}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sand);padding:1px 6px;border-radius:5px}
+pre{background:#2F2217;color:#F2E5CC;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:14px;line-height:1.55;margin:10px 0 14px}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+pre.out{background:var(--sand);color:var(--ink);border-left:4px solid var(--orange-2);border-radius:6px;margin-top:-6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:18px 0}
+.card>h4:first-child,.card>.ct{margin-top:0}
+.ct{font-weight:700;color:var(--deep);font-size:16px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:12px}
+.viz{border-top:5px solid var(--orange-2)}
+.viz .tag{display:inline-block;background:var(--tint);color:var(--rust);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 10px;border-radius:999px;margin-bottom:8px}
+.callout{background:var(--tint-2);border-left:5px solid var(--orange);border-radius:8px;padding:14px 18px;margin:18px 0}
+.callout b.h{display:block;color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.callout.note{background:var(--sand);border-left-color:var(--brown)}
+.callout.note b.h{color:var(--brown)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}body{font-size:16px}}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mini b{display:block;color:var(--deep);margin-bottom:2px}
+.mini .big{font-family:var(--serif);font-size:28px;color:var(--orange-ink);line-height:1.1}
+
+/* controls */
+button,.btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:999px;border:1.5px solid var(--orange-btn);background:var(--card);color:var(--orange-ink);padding:6px 16px}
+button:hover{background:var(--tint-2)}
+button[aria-pressed="true"],button.on{background:var(--orange-btn);color:#fff}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+label{font-size:14px;font-weight:600;color:var(--brown)}
+input[type=range]{width:100%;accent-color:var(--orange-btn)}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;margin-bottom:12px}
+.ctrl output{font-family:var(--mono);color:var(--orange-ink);font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.chk input{accent-color:var(--orange-btn);width:18px;height:18px}
+
+/* tables */
+.tw{overflow-x:auto;margin:10px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--sand);color:var(--deep);font-size:14px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--tint-2)}
+
+/* bars */
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bar .track{background:var(--sand);border-radius:6px;height:26px;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px;transition:width .35s}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+@media(max-width:560px){.bar{grid-template-columns:1fr;gap:2px}.bar .v{text-align:left}}
+
+/* calendar grid */
+.cal{display:grid;grid-template-columns:42px repeat(12,minmax(0,1fr));gap:3px;font-size:11px;max-width:620px}
+.cal .hd,.cal .yr{color:var(--muted);font-weight:700;text-align:center;line-height:20px}
+.cal .yr{text-align:right;padding-right:4px}
+.cal .c{height:20px;border-radius:4px;background:var(--sand);border:1px solid var(--line);text-align:center;line-height:17px;color:var(--brown);font-size:11px}
+.cal .c.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange);color:var(--rust)}
+.cal .c.absent{background:transparent;border:1.5px dashed var(--rust);color:var(--rust);font-weight:700}
+.cal .c.blank{visibility:hidden}
+.cal .cnt{height:46px;display:flex;align-items:flex-end;justify-content:center}
+.cal .cnt i{display:block;width:100%;background:var(--orange);border-radius:3px 3px 0 0;position:relative}
+.cal .cnt i.top{background:var(--rust)}
+.cal .cn{text-align:center;font-weight:700;color:var(--deep);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:10px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:14px;border-radius:3px;background:var(--sand);border:1px solid var(--line)}
+.sw.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.sw.absent{background:transparent;border:1.5px dashed var(--rust)}
+
+svg text{font-family:var(--sans)}
+svg{max-width:100%;height:auto;display:block}
+.mrow{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+.mrow div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:8px 0;font-size:13px;font-weight:700;background:var(--sand);color:var(--brown)}
+.mrow .dip{background:var(--card);border:2px dashed var(--brown)}
+.mrow .peak{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+
+/* steps */
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.steps button{border-radius:10px}
+.stepbody{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+
+/* quiz */
+.quiz{border-left:6px solid var(--orange)}
+.quiz .q{font-weight:600;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;margin:6px 0;font-weight:500}
+.opt:hover{border-color:var(--orange-2);background:var(--tint-2)}
+.opt.right{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+.opt.wrong{border:2px dashed var(--rust);background:var(--paper)}
+.quiz .fb{display:none;margin-top:10px;background:var(--sand);border-radius:8px;padding:10px 14px;font-size:15px}
+.quiz .fb.show{display:block}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:0}
+summary{cursor:pointer;padding:12px 18px;font-weight:700;color:var(--deep);list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--orange-ink);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details .dbody{padding:0 18px 14px}
+details pre{margin-top:0}
+
+footer{background:var(--deep);color:#D9C7A4;text-align:center;padding:28px 20px;font-size:14px}
+
+.chw{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--deep);color:#F3E7D0;font-size:12.5px;line-height:1.45;padding:6px 10px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+.eq{font-family:var(--serif);font-size:19px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0;overflow-x:auto;text-align:center}
+.eq small{font-size:14px;color:var(--muted);font-family:var(--sans)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:6px 0 4px}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.pn{margin:2px 0}
+.pn .pl{font-size:13px;font-weight:700;color:var(--brown);margin:6px 0 0}
+.eqline{font-family:var(--mono);font-size:14px;background:var(--sand);border-radius:8px;padding:8px 12px;margin:8px 0;min-height:38px}
+.faq{border-left:5px solid var(--amber);background:var(--card);border-radius:8px;padding:12px 16px;margin:16px 0}
+.faq b{color:var(--rust)}
+</style>
+</head>
+<body>
+<div class="topbar" role="banner">
+  <nav aria-label="Sections">
+    <a href="#open">Cold open</a><a href="#ma">Moving averages</a><a href="#trend">Trend</a><a href="#season">Seasonality</a><a href="#additive">Additive decomposition</a><a href="#multi">Multiplicative</a><a href="#tools">statsmodels &amp; strength</a><a href="#change">Change points</a><a href="#recap">Recap</a>
+  </nav>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Time Series &amp; Recommender System · Class 2</div>
+    <h1>Taking Time Apart - Trend, Seasonality and Noise Under the Microscope</h1>
+    <p>Smooth a series with moving averages, separate it into trend, seasonality and residual, choose between additive and multiplicative decomposition, and find the points where a trend changes.</p>
+    <div class="chips"><span class="chip">Case: MobiPlus</span><span class="chip">Python · pandas · statsmodels · ruptures</span></div>
+  </div>
+</header>
+
+<main>
+<section id="intro" style="padding-top:36px">
+  <div class="callout note"><b class="h">About the series on this page</b>The cleaned MobiPlus series is the one built in Class 1 (the name <code>sales</code> always means that series). Its raw values are not embedded here, so interactive charts use the other series that the class generates in code (daily store footfall, simulated accessories sales, simulated smartwatch sales). They are rebuilt exactly from the class's own code and random seeds.</div>
+</section>
+
+<!-- COLD OPEN -->
+<section id="open">
+  <div class="kicker">1 · Cold open</div>
+  <h2>The pattern hiding in the numbers</h2>
+  <p>Class 1 ended with one function that parses dates, checks completeness, fills gaps by linear interpolation and caps anomalies at the 2nd and 98th percentiles. Class 2 starts from that clean series: 217 monthly values, no gaps, with the month-start frequency stamped on the index (<code>asfreq("MS")</code>, which statsmodels needs later).</p>
+  <details><summary>Class 1 function, reused</summary><div class="dbody">
+<pre><code>def make_forecast_ready(path, freq="MS", lower_q=0.02, upper_q=0.98):
+    data = pd.read_csv(path, parse_dates=["DATE"]).set_index("DATE")
+    full_calendar = pd.date_range(data.index.min(), data.index.max(), freq=freq)
+    assert len(full_calendar.difference(data.index)) == 0
+    series = data["Sales"].interpolate(method="linear")
+    series = series.clip(lower=series.quantile(lower_q), upper=series.quantile(upper_q))
+    return series.asfreq(freq).rename("Sales")
+
+sales = make_forecast_ready("mobilesales.csv")</code></pre></div></details>
+
+  <p>The factory head is back with a new question: <b>"Our sales go up every year, but December always feels like a rush. Is the rush real, or is it just that we are growing?"</b> Both effects are mixed into one column of numbers. Today we pull them apart.</p>
+  <div class="card viz"><span class="tag">Visualizer · two kinds of movement</span>
+    <div class="sub">Comparing the last three full years (2016–2018), month by month.</div>
+    <div class="bar"><span>Within 2018: June → December</span><div class="track"><div class="fill" style="width:100%;background:var(--orange)"></div></div><span class="v">≈ +900</span></div>
+    <div class="bar"><span>Across years: avg month 2017 → 2018</span><div class="track"><div class="fill" style="width:12.4%;background:var(--amber)"></div></div><span class="v">≈ +112</span></div>
+    <p class="sub" style="margin:8px 0 0">Phones per month. Bar lengths are drawn to scale of the two stated figures.</p>
+  </div>
+<pre><code>jun_to_dec_2018 = by_month.loc[12, 2018] - by_month.loc[6, 2018]
+year_on_year    = by_month[2018].mean() - by_month[2017].mean()</code></pre>
+  <p>Between June and December of the same year, sales jump by about 900 phones. Between 2017 and 2018 the average month changes by only about 112. So the December rush is <b>not</b> growth: it comes back every year, which is a <b>seasonal</b> effect, while the slow climb from year to year is the <b>trend</b>. (December itself is capped at the same value in 2017 and 2018 by the anomaly clipping, so averages are compared instead.) A model that cannot tell the two apart will mix them.</p>
+
+  <h3>The plan</h3>
+  <div class="grid2">
+    <div class="mini"><b>1 · Smooth</b>Use moving averages so the slow part becomes visible.</div>
+    <div class="mini"><b>2 · Define</b>Define the trend and the seasonality and estimate each.</div>
+    <div class="mini"><b>3 · Decompose</b>Split into trend + seasonality + residual, and know when to multiply instead of add.</div>
+    <div class="mini"><b>4 · Detect</b>Find the moments when the trend itself changes.</div>
+  </div>
+</section>
+
+<!-- MOVING AVERAGES -->
+<section id="ma">
+  <div class="kicker">2 · Smoothing</div>
+  <h2>Moving averages with rolling()</h2>
+  <p>Instead of looking at one noisy month, average the last few months. A window of fixed size 𝑚 slides one step at a time, which is why it is called a <b>moving</b> average. Think of a cricket batter's "last 10 innings average": it reacts to a change in form but does not jump after one big score or one duck. In pandas the tool is <code>rolling()</code> followed by an operation such as <code>mean()</code>.</p>
+  <div class="eq">ŷ<sub>t</sub> = <span style="white-space:nowrap">(1/𝑚) · Σ<sub>j=1..𝑚</sub> y<sub>t−j</sub></span></div>
+
+  <div class="card viz"><span class="tag">Visualizer · window shapes</span>
+    <div class="ct">Which points does the window use for the value at 𝑡?</div>
+    <div id="winshapes"></div>
+  </div>
+
+  <h3>Moving-average explorer</h3>
+  <div class="card viz"><span class="tag">Visualizer · rolling window lab</span>
+    <div class="sub">Simulated accessories series from the class (Section 6). Try window 1, 3, 12 and 24, and switch the window type.</div>
+    <div class="btnrow" role="group" aria-label="Window type" id="ma_type">
+      <button data-t="sma" aria-pressed="true">Simple (trailing)</button>
+      <button data-t="wma" aria-pressed="false">Weighted (trailing)</button>
+      <button data-t="cma" aria-pressed="false">Centered</button>
+    </div>
+    <div class="ctrl"><div><label for="ma_w">Window size 𝑚: <output id="ma_wo"></output></label><input id="ma_w" type="range" min="1" max="24" value="3"></div></div>
+    <div id="ma_chart"></div><div id="ma_lg"></div>
+    <p id="ma_msg" class="sub" aria-live="polite" style="margin:6px 0 0"></p>
+  </div>
+<pre><code>ma3 = sales.rolling(3).mean()
+sales.rolling(12).mean()                    # trailing
+sales.rolling(12, center=True).mean()       # centered</code></pre>
+  <p>The window of 3 follows the series closely and still shows the yearly zig-zag, while the window of 12 is almost a smooth upward line. Two costs come with a bigger window: more empty values at the start (the window size minus one for a trailing window) and more <b>lag</b>, meaning the average turns later than the data. A window of 1 gives back the original series exactly.</p>
+  <div class="faq"><b>Why does a window of 12 make sense for monthly data?</b><br>One window of 12 covers every calendar month exactly once, so the yearly pattern cancels out and mostly the slow movement remains.</div>
+
+  <h3>Weighted moving average (WMA)</h3>
+  <p>A simple moving average treats last month and three months ago alike. A <b>weighted</b> moving average gives recent months more weight, and divides by the sum of weights so the result stays on the same scale.</p>
+  <div class="eq">ŷ<sub>t</sub> = Σ a<sub>j</sub> y<sub>t−j</sub> / Σ a<sub>j</sub>, &nbsp; a<sub>1</sub> &gt; a<sub>2</sub> &gt; … &gt; a<sub>m</sub></div>
+<pre><code>weights = np.array([1, 2, 3])        # oldest ... newest inside each window of 3
+wma3 = sales.rolling(3).apply(lambda x: np.dot(x, weights) / weights.sum(), raw=True)</code></pre>
+  <p>The newest month gets three times the weight of the oldest, divided by 6. On the MobiPlus series the WMA stays closer to the actual values than the SMA, and in the last rows, where sales rise, it reacts faster. (The explorer above uses weights 1, 2, …, 𝑚.) Choosing the weights by hand is arbitrary, and nothing stops us from letting a computer choose them: that is the seed of <b>auto-regression</b>, explored in later classes.</p>
+
+  <h3>Centered moving average (CMA)</h3>
+  <p>A centered window takes points on both sides of the current one. In pandas it is one argument: <code>center=True</code>.</p>
+  <div class="eq">ŷ<sub>t</sub> = 1/(2𝑚+1) · Σ<sub>j=t−m..t+m</sub> y<sub>j</sub></div>
+  <p>The centered line sits on the middle of the series, while the trailing one runs late by about half a window. A window of 12 is even, so there is no single middle month, and pandas leaves 6 empty values at the start and 5 at the end (try it in the explorer).</p>
+  <div class="callout"><b class="h">Important</b>A centered average needs <b>future</b> values, so it can be used to smooth and to explain history but <b>never to forecast</b>. It is a preprocessing and analysis tool.</div>
+
+  <h3>Link back to Class 1: interpolation is a centered average</h3>
+  <p>Hide one month and fill it two ways: with <code>s.interpolate()</code> and with <code>s.rolling(3, center=True, min_periods=2).mean()</code>. Both fills are the average of the two neighbours, so linear interpolation over a single gap is a centered moving average whose window is one point on each side.</p>
+
+  <details><summary>Practice · Which window size?</summary><div class="dbody">
+    <p>The window size is a hyperparameter: too small keeps the noise, too large erases real changes. Ask an AI assistant for code that plots the centered moving average for windows 3, 6, 12 and 24 and reports how many values are lost at the edges, and which window it would pick to expose the long-term movement. Verify the reported lost values against <code>.isna().sum()</code> for each window, check that its pick removes the yearly zig-zag in your plot, then compare it with the 12-month line.</p>
+    <p style="margin:0"><b>Reflect:</b> why is a window that is not a multiple of the cycle length a poor choice for removing seasonality?</p></div></details>
+  <div class="card quiz" data-q="0"></div>
+</section>
+
+<!-- TREND -->
+<section id="trend">
+  <div class="kicker">3 · Trend</div>
+  <h2>The slow movement</h2>
+  <p>The <b>trend</b> is the slow, long-term movement of a series: upward, downward, or changing direction over time. It does not repeat the way a season does. A song may trend for a few weeks and then disappear. A <b>trend line</b> is a smooth function that traces this movement; the word "line" is misleading, because it can curve. A series has one trend: if several movements exist they combine into a single resulting curve.</p>
+
+  <h3>Way 1: a long rolling average</h3>
+  <p>A long centered window removes noise and seasonality, and what is left is the trend. For monthly data the window should be at least one full year.</p>
+  <h3>Way 2: fit a regression on time</h3>
+  <p>Time is the only input, so with 𝑡 = 0, 1, 2, … the straight-line trend is ŷ<sub>t</sub> = w·t + c. A curved trend uses a polynomial of degree 2. <code>numpy.polyfit</code> fits any degree.</p>
+<pre><code>t = np.arange(len(sales))
+lin  = np.polyval(np.polyfit(t, sales.values, 1), t)
+quad = np.polyval(np.polyfit(t, sales.values, 2), t)</code></pre>
+  <div class="grid2">
+    <div class="mini"><b>Rolling average</b>Follows the curve of the data but loses values at both ends. Says "here is what happened".</div>
+    <div class="mini"><b>Regression on time</b>Gives a formula that extends to every month and can be read directly. Says "here is a rule", which is why it can later be extended into the future.</div>
+  </div>
+  <p style="margin-top:14px">On the MobiPlus series the two ways tell almost the same story: sales grow by about <b>39 phones per month</b>, and the quadratic fit stays within about 11 phones of the straight line, so a straight line is a good description of this series.</p>
+
+  <h3>The one constraint: a trend cannot be periodic</h3>
+  <p>If the estimated "trend" still goes up and down every year, it is not a pure trend: seasonality has leaked into it.</p>
+  <div class="card viz"><span class="tag">Visualizer · trend window lab</span>
+    <div class="sub">Centered rolling averages of the simulated accessories series, 2014–2018. Hover to compare.</div>
+    <div class="btnrow" id="tr_btns" role="group" aria-label="Windows to show">
+      <button data-w="3" aria-pressed="true">Window 3</button><button data-w="6" aria-pressed="false">Window 6</button><button data-w="12" aria-pressed="true">Window 12</button><button data-w="24" aria-pressed="false">Window 24</button>
+    </div>
+    <div id="tr_chart"></div><div id="tr_lg"></div>
+    <div class="ct" style="margin-top:12px">Average month-to-month swing of each trend estimate (whole series)</div>
+    <div id="tr_swing"></div>
+    <p class="sub" style="margin:6px 0 0">A smaller swing means a smoother estimate. A window shorter than the cycle keeps repeating the yearly wave, so it is not a valid trend. The rule: <b>if the trend is periodic, move the seasonality out of it first</b>, which the next sections show.</p>
+  </div>
+  <div class="card quiz" data-q="1"></div>
+</section>
+
+<!-- SEASONALITY -->
+<section id="season">
+  <div class="kicker">4 · Seasonality</div>
+  <h2>Patterns with a fixed period</h2>
+  <p><b>Seasonality</b> is a pattern that repeats at a <b>fixed and known period</b>. It can be seen as a simple repeating wave, and the repeatability is exactly what makes forecasting possible. You recognise it by regularly spaced peaks and troughs with a consistent direction and roughly the same size every cycle, relative to the trend.</p>
+  <div class="tw"><table>
+    <tr><th>Type</th><th>Example for MobiPlus</th><th>Period</th></tr>
+    <tr><td>Hourly</td><td>Store visits peak in the evening</td><td>24 hours</td></tr>
+    <tr><td>Weekly</td><td>Higher footfall on weekends</td><td>7 days</td></tr>
+    <tr><td>Yearly</td><td>Festive season in October to December</td><td>12 months</td></tr>
+    <tr><td>Weather-linked</td><td>Sweaters in winter, sunglasses in summer</td><td>12 months</td></tr>
+  </table></div>
+
+  <h3>How to compute it</h3>
+  <ol><li>Estimate the trend and subtract it from the series.</li><li>Group what is left by position in the cycle (all Januaries, all Februaries and so on) and average each group.</li><li>Shift the averages so they add up to zero.</li></ol>
+  <div class="card viz"><span class="tag">Visualizer · seasonality step by step</span>
+    <div class="sub">Illustrated on the simulated accessories series, with a 2×12 centered average as the trend.</div>
+    <div class="steps" id="se_steps" role="tablist" aria-label="Steps"></div>
+    <div id="se_chart"></div><div id="se_lg"></div>
+    <p id="se_msg" class="sub" aria-live="polite" style="margin:6px 0 0"></p>
+  </div>
+<pre><code>detrended = sales - trend12
+seasonal_by_month = detrended.groupby(detrended.index.month).mean()
+seasonal_by_month = seasonal_by_month - seasonal_by_month.mean()</code></pre>
+  <p>On the MobiPlus series the bars say that in an average year January and February are the weakest months, about 1,000 and 1,700 phones below the trend, and November and December lift sales by about 950 and 1,500 phones. This is the repeating pattern from Class 1, now measured in phones.</p>
+  <div class="faq"><b>If next year's trend is 14,000 phones a month, what would you expect December to be?</b><br>About 14,000 plus the December effect. Seasonality is added on top of the trend.</div>
+
+  <h3>More than one seasonality</h3>
+  <p>Real series often carry two cycles at once. Here is a simulated daily footfall series for a MobiPlus store, with a <b>weekly</b> cycle (busy weekends) and a <b>yearly</b> cycle (festive months).</p>
+  <div class="card viz"><span class="tag">Visualizer · two cycles in one series</span>
+    <div class="btnrow" role="group" aria-label="View"><button id="ff_full" aria-pressed="true">Three years</button><button id="ff_zoom" aria-pressed="false">Zoom: 1 Oct – 15 Nov 2018</button></div>
+    <div id="ff_chart"></div>
+    <div class="ct" style="margin-top:12px">Average footfall by weekday</div>
+    <div id="ff_wd"></div>
+    <p class="sub" style="margin:6px 0 0">The zoom shows a weekly ripple with Saturday as the peak; the full view shows a slow yearly wave. One series, two periods: 7 and about 365. A good analysis names both, and they are decomposed one after the other.</p>
+  </div>
+  <div class="faq"><b>How do I know the period?</b><br>Domain knowledge first: days of the week, months of the year, hours of the day. When unsure, plot the series, zoom in, and look at how far apart the repeating peaks are.</div>
+  <div class="card quiz" data-q="2"></div>
+</section>
+
+<!-- ADDITIVE -->
+<section id="additive">
+  <div class="kicker">5 · Decomposition</div>
+  <h2>Additive decomposition and the residual term</h2>
+  <p>A series is made of simple components that can be estimated one by one:</p>
+  <div class="eq">y(t) = b(t) + s(t) + e(t) &nbsp;&nbsp;<small>trend + seasonality + residual</small></div>
+  <p>Here 𝑏(𝑡) is the trend, 𝑠(𝑡) is the seasonality and 𝑒(𝑡) is the error or <b>residual</b>: whatever the first two cannot explain. This is the <b>additive</b> model, and the residual is not estimated, it is computed:</p>
+  <div class="eq">e(t) = y(t) − b(t) − s(t)</div>
+  <p>Think of a cup of tea: the water is the trend, the sugar is the seasonality, and the leftover bits that settle at the bottom are the residual.</p>
+  <p>For an even period such as 12 there is no single middle month, so the trend uses a centered window of 13 points with half weight on both ends, often written <b>2×12 MA</b>.</p>
+  <div class="card viz"><span class="tag">Visualizer · why 2×12</span>
+    <div class="sub">Weights given to each month around the centre point. The plain 12-point window cannot be centered on a single month; 2×12 puts half weight on both ends.</div>
+    <div id="w_chart"></div><div id="w_lg"></div>
+  </div>
+<pre><code>def centered_ma(s, period):
+    if period % 2 == 1:
+        return s.rolling(period, center=True).mean()
+    w = np.r_[0.5, np.ones(period - 1), 0.5] / period          # 2 x period moving average
+    return s.rolling(period + 1, center=True).apply(lambda x: np.dot(x, w), raw=True)
+
+def decompose(s, period, model="additive"):
+    trend = centered_ma(s, period)
+    pos = np.arange(len(s)) % period                           # position inside the cycle
+    if model == "additive":
+        raw = (s - trend).groupby(pos).mean();  raw = raw - raw.mean()
+        seasonal = pd.Series(raw.loc[pos].values, index=s.index)
+        resid = s - trend - seasonal
+    else:
+        raw = (s / trend).groupby(pos).mean();  raw = raw / raw.mean()
+        seasonal = pd.Series(raw.loc[pos].values, index=s.index)
+        resid = s / (trend * seasonal)
+    return pd.DataFrame({"observed": s, "trend": trend, "seasonal": seasonal, "resid": resid})</code></pre>
+  <p>Decomposing gives four panels: the observed series, a smooth rising trend, a seasonal pattern that repeats exactly every year, and a residual hovering around zero. Adding the first three components back reproduces the observed series up to the residual, by construction. On MobiPlus the residual mean is about 0.6 (essentially zero next to sales of about 10,000) and its spread about 430 phones, a small share of the level. A lopsided histogram would hint that a constant term is missing; a narrow bell shape is what we hope for.</p>
+
+  <h3>When the residual still shows a pattern</h3>
+  <p>Sometimes the residual keeps a trend or seasonality. This happens when the series has <b>more than one seasonality</b> or when the trend was estimated wrongly. Test it on the daily footfall series by decomposing only the weekly cycle.</p>
+  <div class="card viz"><span class="tag">Visualizer · nested decomposition</span>
+    <div class="sub">30-day average of the residual of daily footfall, same scale for both lines.</div>
+    <div class="btnrow" id="rs_btns" role="group" aria-label="Which residual"><button data-m="r1" aria-pressed="false">After weekly only</button><button data-m="r2" aria-pressed="false">After weekly + yearly</button><button data-m="both" aria-pressed="true">Both</button></div>
+    <div id="rs_chart"></div><div id="rs_lg"></div>
+    <div class="ct" style="margin-top:12px">Spread (standard deviation) of the footfall series</div>
+    <div id="rs_std"></div>
+    <p class="sub" style="margin:6px 0 0">After the weekly step a slow yearly wave is still visible: pattern is left. The fix is to treat the residual as a <b>new series</b> and decompose it again. The spread falls from about 26.7 to 3.7 to 2.6, below the noise of about 4 that was added: with only three years of data each calendar day occurs about twice, so the yearly averages absorb part of the noise, one reason long cycles need many years of history.</p>
+  </div>
+  <div class="eq">y<sub>A</sub>(t) = b<sub>A</sub>(t) + s<sub>A</sub>(t) + b<sub>B</sub>(t) + s<sub>B</sub>(t) + e<sub>B</sub>(t) &nbsp;<small>series B is the residual of series A</small></div>
+  <p>The process continues until the residual has no pattern.</p>
+  <details><summary>Practice · Does the residual still hold a pattern?</summary><div class="dbody">
+    <p>"The histogram looks fine" is not a test: a residual can look normal and still hide a cycle. Ask an AI assistant for a function that reports the residual's mean, standard deviation, lag-1 autocorrelation and the strongest autocorrelation among lags 1 to 400. Run it on the weekly-only residual and on the weekly + yearly residual, and check it flags the first and not the second. Compare its lag-1 value with <code>r1.autocorr(1)</code>, then run it on the MobiPlus monthly residual.</p>
+    <p style="margin:0"><b>Reflect:</b> what does a high autocorrelation at lag 7 in the residual of a daily series suggest?</p></div></details>
+</section>
+
+<!-- MULTIPLICATIVE -->
+<section id="multi">
+  <div class="kicker">6 · Decomposition</div>
+  <h2>Multiplicative decomposition and the log link</h2>
+  <p>In the MobiPlus series the seasonal swing stays about the same size every year. In many businesses the swing <b>grows</b> with the level: when sales are twice as large, the December jump is twice as large. A simulated MobiPlus accessories line shows this. Adding a fixed seasonal pattern cannot represent it: the same +300 would be big early and negligible later. The idea is to <b>multiply</b>:</p>
+  <div class="eq">y(t) = b(t) × s(t) × e(t), &nbsp; e(t) = y(t) / (b(t)·s(t))</div>
+  <p>Now 𝑠(𝑡) is a factor around 1: a December factor of 1.3 means "30% above the trend", whatever the level is.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · decomposition explorer</span>
+    <div class="ct">Simulated accessories sales, 2010–2018</div>
+    <div class="btnrow" id="dc_btns" role="group" aria-label="Model"><button data-m="add" aria-pressed="true">Additive</button><button data-m="mul" aria-pressed="false">Multiplicative</button></div>
+    <div id="dc_p0" class="pn"></div><div id="dc_p1" class="pn"></div><div id="dc_p2" class="pn"></div><div id="dc_p3" class="pn"></div>
+    <div id="dc_eq" class="eqline" aria-live="polite"></div>
+    <div class="tw"><table id="dc_tab"></table></div>
+    <p id="dc_msg" class="sub" style="margin:0"></p>
+  </div>
+<pre><code>add = decompose(accessories, 12, "additive")
+mul = decompose(accessories, 12, "multiplicative")</code></pre>
+  <p>The yearly peaks get taller as the series grows. With the additive model the residual spread grows by about 40% from the early to the late years (110 to 157 units), which means the swing left behind grows with the level. With the multiplicative model the residual, expressed as a ratio, stays at about 2% of the level in both periods: the sign of a model that fits.</p>
+
+  <h3>The log link</h3>
+  <p>Taking logarithms turns a product into a sum:</p>
+  <div class="eq">log y(t) = log b(t) + log s(t) + log e(t)</div>
+  <p>So a multiplicative model is an <b>additive model on the log of the series</b>. Decomposing <code>np.log(accessories)</code> additively and converting back with <code>exp</code> gives nearly the same twelve seasonal factors:</p>
+  <div class="card viz"><span class="tag">Visualizer · two routes, same factors</span>
+    <div id="lg_chart"></div><div id="lg_lg"></div>
+    <p id="lg_msg" class="sub" style="margin:6px 0 0"></p>
+  </div>
+  <p>The log link is not just a formula: it lets every additive tool be reused on a multiplicative series, then converted back with <code>exp</code>. In practice, if the swing grows with the level, either multiply or log-transform first.</p>
+  <div class="faq"><b>How do I choose between additive and multiplicative?</b><br>Plot the series. If the seasonal swing stays about the same height, use additive. If it grows or shrinks with the level, use multiplicative. If the series contains zeros or negative numbers, multiplication and logs are a problem, so stay additive.</div>
+  <div class="card quiz" data-q="3"></div>
+</section>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="kicker">7 · In practice</div>
+  <h2>statsmodels seasonal_decompose and decomposition from scratch</h2>
+  <p>We wrote the decomposition by hand to understand it. In practice one line does the same job:</p>
+<pre><code>result = sm.tsa.seasonal_decompose(sales, model="additive", period=12)
+result.plot()</code></pre>
+  <p>The four panels are the observed series, the trend (empty at both ends because statsmodels also uses a centered average), the seasonality and the residual (<code>result.resid</code>). Our function and statsmodels agree to many decimal places for trend, seasonality and residual, so there is no magic inside the library: it is the 2×12 centered average, the monthly averages and a subtraction.</p>
+  <div class="callout note"><b class="h">A common stumble</b>Using plain <code>rolling(12, center=True)</code> for the trend and wondering why the numbers differ slightly from statsmodels. The plain 12-point window cannot be centered on a single month, so it lands half a month off (see the weights chart above). The 2×12 version fixes that, which is what statsmodels does.</div>
+  <div class="callout"><b class="h">Important</b>The argument for the cycle length is called <code>period</code> in current statsmodels and was <code>freq</code> in older versions. Libraries change often, so check the documentation when code from an old notebook fails.</div>
+
+  <h3>How strong are trend and seasonality?</h3>
+  <p>A useful summary of a decomposition is its <b>strength</b>, a number between 0 and 1:</p>
+  <div class="eq">F<sub>trend</sub> = max(0, 1 − Var(e) / Var(b+e)) <br> F<sub>season</sub> = max(0, 1 − Var(e) / Var(s+e))</div>
+<pre><code>def strength(parts):
+    d = parts.dropna()
+    f_trend  = max(0, 1 - d.resid.var() / (d.trend + d.resid).var())
+    f_season = max(0, 1 - d.resid.var() / (d.seasonal + d.resid).var())
+    return {"trend strength": round(f_trend, 3), "seasonal strength": round(f_season, 3)}</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · strength gauges</span>
+    <div class="bar"><span>MobiPlus · trend</span><div class="track"><div class="fill" style="width:96.6%;background:var(--orange)"></div></div><span class="v">0.966</span></div>
+    <div class="bar"><span>MobiPlus · yearly seasonality</span><div class="track"><div class="fill" style="width:78.7%;background:var(--amber)"></div></div><span class="v">0.787</span></div>
+    <div class="bar"><span>Footfall · weekly seasonality</span><div class="track"><div class="fill" style="width:90.4%;background:var(--brown)"></div></div><span class="v">0.904</span></div>
+    <p class="sub" style="margin:8px 0 0">Scale 0 to 1. A value near 1 means that component explains almost everything that is not residual. For MobiPlus the trend is very strong and the yearly seasonality is strong but weaker. This gives a number to the sentence "this series is highly seasonal".</p>
+  </div>
+</section>
+
+<!-- CHANGE POINTS -->
+<section id="change">
+  <div class="kicker">8 · Change points</div>
+  <h2>Detecting trend changes</h2>
+  <p>A <b>change point</b> is a moment when the behaviour of a series changes: the trend turns upward, the slope gets steeper, or the level jumps. Business causes are easy to name: a new model launch, a competitor entering, a price change or a policy change.</p>
+  <p>The simulated MobiPlus smartwatch series below has two such changes that the data scientist does not know about yet: a gentle rise, then a steep rise, then a gentle fall.</p>
+
+  <h3>Way 1: a sliding window</h3>
+  <p>Fit a straight line in a window just <b>before</b> each month and another just <b>after</b> it. If the two slopes differ a lot, something changed there. The score is the absolute difference of the two slopes; it peaks where the trend changes.</p>
+  <div class="card viz"><span class="tag">Visualizer · sliding-window detector</span>
+    <div class="ctrl"><div><label for="cp_w">Window size 𝑊 (months): <output id="cp_wo"></output></label><input id="cp_w" type="range" min="4" max="24" value="12"></div></div>
+    <label class="chk" style="margin-bottom:8px"><input type="checkbox" id="cp_true"> Reveal the true change points (positions 40 and 85)</label>
+    <div class="ct">Smartwatch sales</div><div id="cp_chart"></div>
+    <div class="ct" style="margin-top:6px">Slope-change score</div><div id="cp_score"></div><div id="cp_lg"></div>
+    <div class="tw"><table id="cp_tab"></table></div>
+    <p id="cp_msg" class="sub" style="margin:0" aria-live="polite"></p>
+  </div>
+<pre><code>def slope_change_score(y, w):
+    score = np.full(len(y), np.nan)
+    x = np.arange(w)
+    for i in range(w, len(y) - w + 1):
+        left  = np.polyfit(x, y[i - w:i], 1)[0]
+        right = np.polyfit(x, y[i:i + w], 1)[0]
+        score[i] = abs(right - left)
+    return score</code></pre>
+  <p>With 𝑊 = 12 the two largest peaks (a minimum gap of one window between them) land at June 2012 and February 2016, against true changes in May 2012 and February 2016: one exact, one a month late. The window size is a trade-off: a short window is jumpy, and a long one blurs close changes.</p>
+
+  <h3>Way 2: the ruptures library</h3>
+  <p>A change in <b>slope</b> is a change in the <b>average of the month-to-month differences</b>, so the detector runs on the differenced series.</p>
+<pre><code>signal = np.diff(watch.values).reshape(-1, 1)
+algo = rpt.Binseg(model="l2", min_size=6).fit(signal)
+bkps = algo.predict(n_bkps=2)[:-1]       # the last entry is just the series end
+[b + 1 for b in bkps]                    # +1 because differencing shortens the series by one</code></pre>
+  <p>Binary segmentation finds breaks at positions <b>41 and 86</b>, within one month of the true 40 and 85. It was told how many breaks to look for. When the number is unknown, <code>Pelt</code> with a <b>penalty</b> is used: a bigger penalty means fewer breaks.</p>
+  <div class="card viz"><span class="tag">Visualizer · penalty explorer</span>
+    <div class="sub">Pelt (model l2, min_size 6) on the differenced smartwatch series.</div>
+    <div class="btnrow" id="pe_btns" role="group" aria-label="Penalty"></div>
+    <div id="pe_chart"></div>
+    <p id="pe_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+    <p class="sub" style="margin:0">The penalty controls the answer, from far too many breaks to none at all, so it has to be chosen using domain knowledge, a plot and a test like the one above.</p>
+  </div>
+  <details><summary>Practice · Choosing the number of change points</summary><div class="dbody">
+    <p>Detectors always return something, so how many change points are real? Ask an AI assistant how to choose the Pelt penalty and for code that plots the number of breaks against the penalty on a log scale. Run it and look for a flat region where the count stays the same across a wide range of penalties, compare that count with the plot, and use that penalty in place of <code>n_bkps=2</code>.</p>
+    <p style="margin:0"><b>Reflect:</b> which is worse for MobiPlus, a missed change point or a false one, and how would that change your penalty?</p></div></details>
+
+  <h3>Useful for analysis, not for forecasting</h3>
+  <div class="callout"><b class="h">Important</b>A change point is only recognised <b>after</b> enough new data has arrived. The sliding window needs 𝑊 months after the change before it can score it. During those months a model is still living in the old regime.</div>
+  <div class="card viz"><span class="tag">Visualizer · the cost of late detection</span>
+    <div class="sub">Straight line fitted on the first regime (months 0–39) and extended forward.</div>
+    <div id="fc_chart"></div><div id="fc_lg"></div>
+    <div class="grid3" style="margin-top:10px" id="fc_nums"></div>
+  </div>
+  <p>By the time the change is detected (month 52 with 𝑊 = 12), a forecast that kept extending the old trend is already off by about 350 smartwatches a month. Change point detection explains what happened and when, which tells the business which event moved the trend. It cannot warn about a change before it starts. For forecasting the information is treated as context, for example by fitting the model only on the data after the latest change.</p>
+  <div class="card quiz" data-q="4"></div>
+</section>
+
+<!-- RECAP -->
+<section id="recap">
+  <div class="kicker">Recap</div>
+  <h2>Key takeaways</h2>
+  <ul>
+    <li>A <b>moving average</b> smooths by averaging a sliding window: the <b>weighted</b> version favours recent values, the <b>centered</b> version looks both ways and so is for analysis, never for forecasting. Linear interpolation is a centered average.</li>
+    <li>The <b>trend</b> is the slow, non-periodic movement. Estimate it with a long centered rolling average (at least one full cycle) or a regression on time.</li>
+    <li><b>Seasonality</b> repeats with a fixed, known period. Compute it by removing the trend, averaging each position in the cycle and centering at zero. A series can have more than one.</li>
+    <li><b>Decomposition</b> splits a series into trend, seasonality and residual. If the residual still has a pattern, decompose it again. If the swing grows with the level, multiply, or add on the <b>log</b>.</li>
+    <li><code>seasonal_decompose</code> is the same idea in one line. <b>Change points</b> mark where the trend changes, found with a sliding window or <code>ruptures</code>, and they explain the past rather than forecast the future.</li>
+  </ul>
+  <h3>Common mistakes</h3>
+  <div class="grid2">
+    <div class="mini">Using a trend window shorter than the cycle, so seasonality leaks into the trend.</div>
+    <div class="mini">Using a centered average anywhere near a forecast.</div>
+    <div class="mini">Calling a residual "fine" because its histogram looks bell-shaped, without checking for leftover cycles.</div>
+    <div class="mini">Using an additive model when the seasonal swing grows with the level.</div>
+    <div class="mini">Using a different period than the data supports, for example 12 on weekly data.</div>
+    <div class="mini">Choosing a change point penalty without looking at the plot.</div>
+  </div>
+  <div class="callout" style="margin-top:22px"><b class="h">Closing the MobiPlus story</b>The factory head now has a clear answer: December is a <b>seasonal</b> rush, worth about 1,500 extra phones a month, and sales are growing by roughly 39 phones every month underneath it. The team also knows how to describe each piece with a number. In Class 3 we start forecasting: first we agree on how to measure a forecast honestly, and then we see how far the simplest methods go.</div>
+</section>
+</main>
+
+<footer>Time Series &amp; Recommender System: Class 2 (Post-Read)</footer>
+
+<script>
+(function(){
+"use strict";
+const D={"acc":[773.0,722.0,906.0,987.0,1075.0,1076.0,1047.0,1104.0,1115.0,1274.0,1351.0,1470.0,889.0,911.0,1061.0,1069.0,1197.0,1196.0,1206.0,1287.0,1232.0,1425.0,1544.0,1731.0,1070.0,1028.0,1159.0,1291.0,1345.0,1423.0,1365.0,1509.0,1452.0,1604.0,1731.0,2010.0,1181.0,1112.0,1415.0,1453.0,1657.0,1688.0,1544.0,1756.0,1624.0,1871.0,2066.0,2213.0,1399.0,1327.0,1671.0,1674.0,1889.0,1846.0,1874.0,1961.0,2025.0,2195.0,2563.0,2766.0,1669.0,1583.0,1841.0,1999.0,2222.0,2177.0,2198.0,2321.0,2280.0,2466.0,2740.0,3156.0,1885.0,1737.0,2225.0,2225.0,2377.0,2448.0,2599.0,2654.0,2512.0,2782.0,3219.0,3506.0,2089.0,2098.0,2413.0,2646.0,2846.0,2899.0,2911.0,3225.0,2940.0,3201.0,3474.0,4154.0,2480.0,2397.0,2848.0,3042.0,3217.0,3341.0,3383.0,3538.0,3459.0,4065.0,4301.0,4604.0],"accIdx":["2010-01-01","2010-02-01","2010-03-01","2010-04-01","2010-05-01","2010-06-01","2010-07-01","2010-08-01","2010-09-01","2010-10-01","2010-11-01","2010-12-01","2011-01-01","2011-02-01","2011-03-01","2011-04-01","2011-05-01","2011-06-01","2011-07-01","2011-08-01","2011-09-01","2011-10-01","2011-11-01","2011-12-01","2012-01-01","2012-02-01","2012-03-01","2012-04-01","2012-05-01","2012-06-01","2012-07-01","2012-08-01","2012-09-01","2012-10-01","2012-11-01","2012-12-01","2013-01-01","2013-02-01","2013-03-01","2013-04-01","2013-05-01","2013-06-01","2013-07-01","2013-08-01","2013-09-01","2013-10-01","2013-11-01","2013-12-01","2014-01-01","2014-02-01","2014-03-01","2014-04-01","2014-05-01","2014-06-01","2014-07-01","2014-08-01","2014-09-01","2014-10-01","2014-11-01","2014-12-01","2015-01-01","2015-02-01","2015-03-01","2015-04-01","2015-05-01","2015-06-01","2015-07-01","2015-08-01","2015-09-01","2015-10-01","2015-11-01","2015-12-01","2016-01-01","2016-02-01","2016-03-01","2016-04-01","2016-05-01","2016-06-01","2016-07-01","2016-08-01","2016-09-01","2016-10-01","2016-11-01","2016-12-01","2017-01-01","2017-02-01","2017-03-01","2017-04-01","2017-05-01","2017-06-01","2017-07-01","2017-08-01","2017-09-01","2017-10-01","2017-11-01","2017-12-01","2018-01-01","2018-02-01","2018-03-01","2018-04-01","2018-05-01","2018-06-01","2018-07-01","2018-08-01","2018-09-01","2018-10-01","2018-11-01","2018-12-01"],"addT":[null,null,null,null,null,null,1079.8,1092.5,1106.9,1116.8,1125.2,1135.3,1147.0,1161.2,1173.7,1184.9,1199.2,1218.1,1236.5,1249.0,1257.9,1271.2,1286.7,1302.3,1318.4,1334.2,1352.7,1369.3,1384.5,1404.0,1420.2,1428.3,1442.5,1459.9,1479.7,1503.7,1522.2,1540.0,1557.4,1575.7,1600.8,1623.2,1640.8,1658.8,1678.4,1698.3,1717.2,1733.4,1753.8,1776.0,1801.3,1831.5,1865.7,1909.5,1943.8,1965.7,1983.4,2004.0,2031.5,2059.1,2086.4,2114.9,2140.5,2162.5,2181.1,2204.8,2230.0,2245.4,2267.8,2293.2,2309.1,2326.9,2354.9,2385.5,2409.0,2431.8,2465.0,2499.5,2522.6,2546.1,2569.0,2594.4,2631.5,2669.8,2701.6,2738.4,2780.0,2815.3,2843.4,2881.0,2924.3,2953.0,2983.6,3018.2,3050.2,3084.1,3122.2,3154.9,3189.5,3247.2,3317.6,3370.8,null,null,null,null,null,null],"addS":[-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4,-411.6,-495.0,-214.9,-145.9,-6.9,-5.1,-25.3,91.2,-7.2,176.7,388.6,655.4],"addR":[null,null,null,null,null,null,-7.6,-79.8,15.3,-19.5,-162.9,-320.7,153.6,244.8,102.2,30.0,4.7,-17.0,-5.3,-53.2,-18.7,-23.0,-131.3,-226.7,163.2,188.8,21.2,67.6,-32.6,24.2,-29.9,-10.6,16.7,-32.6,-137.3,-149.1,70.4,67.1,72.5,23.2,63.1,69.9,-71.5,6.0,-47.2,-4.0,-39.8,-175.8,56.8,46.0,84.6,-11.6,30.2,-58.3,-44.5,-95.9,48.8,14.2,142.9,51.5,-5.9,-36.9,-84.6,-17.5,47.8,-22.6,-6.7,-15.7,19.4,-4.0,42.3,173.7,-58.3,-153.4,30.9,-60.9,-81.0,-46.4,101.7,16.6,-49.8,10.9,198.9,180.8,-201.0,-145.3,-152.1,-23.4,9.6,23.1,12.0,180.7,-36.4,6.0,35.2,414.5,-230.6,-262.8,-126.6,-59.3,-93.7,-24.7,null,null,null,null,null,null],"mulT":[null,null,null,null,null,null,1079.8,1092.5,1106.9,1116.8,1125.2,1135.3,1147.0,1161.2,1173.7,1184.9,1199.2,1218.1,1236.5,1249.0,1257.9,1271.2,1286.7,1302.3,1318.4,1334.2,1352.7,1369.3,1384.5,1404.0,1420.2,1428.3,1442.5,1459.9,1479.7,1503.7,1522.2,1540.0,1557.4,1575.7,1600.8,1623.2,1640.8,1658.8,1678.4,1698.3,1717.2,1733.4,1753.8,1776.0,1801.3,1831.5,1865.7,1909.5,1943.8,1965.7,1983.4,2004.0,2031.5,2059.1,2086.4,2114.9,2140.5,2162.5,2181.1,2204.8,2230.0,2245.4,2267.8,2293.2,2309.1,2326.9,2354.9,2385.5,2409.0,2431.8,2465.0,2499.5,2522.6,2546.1,2569.0,2594.4,2631.5,2669.8,2701.6,2738.4,2780.0,2815.3,2843.4,2881.0,2924.3,2953.0,2983.6,3018.2,3050.2,3084.1,3122.2,3154.9,3189.5,3247.2,3317.6,3370.8,null,null,null,null,null,null],"mulS":[0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264,0.7921,0.7544,0.8939,0.9259,0.9977,0.9971,0.9791,1.0416,0.9951,1.0972,1.1996,1.3264],"mulR":[null,null,null,null,null,null,0.9903,0.9701,1.0123,1.0398,1.0008,0.9762,0.9786,1.04,1.0113,0.9744,1.0005,0.9847,0.9961,0.9893,0.9842,1.0217,1.0003,1.0021,1.0246,1.0214,0.9585,1.0183,0.9737,1.0165,0.9816,1.0143,1.0115,1.0014,0.9752,1.0078,0.9795,0.9572,1.0164,0.9959,1.0375,1.0429,0.9611,1.0163,0.9723,1.0041,1.003,0.9625,1.0071,0.9905,1.0378,0.9872,1.0148,0.9696,0.9847,0.9578,1.026,0.9983,1.0517,1.0127,1.0099,0.9922,0.9622,0.9984,1.0211,0.9903,1.0067,0.9924,1.0103,0.9801,0.9892,1.0226,1.0106,0.9653,1.0333,0.9882,0.9666,0.9822,1.0523,1.0007,0.9826,0.9774,1.0197,0.9901,0.9762,1.0156,0.971,1.0151,1.0033,1.0092,1.0167,1.0485,0.9902,0.9666,0.9494,1.0155,1.0028,1.0072,0.9989,1.0118,0.9719,0.994,null,null,null,null,null,null],"addStd":[110.1,157.0],"mulStd":[0.02,0.024],"seasMul":[0.792,0.754,0.894,0.926,0.998,0.997,0.979,1.042,0.995,1.097,1.2,1.326],"seasLog":[0.8,0.762,0.903,0.936,1.01,1.013,0.995,1.055,1.006,1.108,1.211,1.339],"logDiff":0.01589476139195778,"ff":[333.2,356.3,343.7,318.6,315.4,316.3,324.5,331.9,352.9,330.4,325.8,315.0,319.9,320.4,329.3,350.4,339.6,317.3,313.2,318.3,315.9,323.0,348.4,331.8,308.6,308.7,311.8,312.6,321.1,344.8,336.0,313.1,306.7,312.9,317.9,323.4,344.5,334.1,310.7,303.9,310.2,313.4,326.4,334.4,324.5,305.4,297.4,306.4,311.6,316.1,342.2,327.5,308.3,302.9,306.7,301.1,318.4,335.9,314.0,304.0,297.1,302.8,301.4,312.7,331.6,314.3,301.7,294.4,298.3,297.8,313.7,329.3,313.7,298.5,296.5,300.1,290.2,309.5,325.4,310.6,288.5,293.1,284.5,295.3,307.8,313.7,306.4,283.9,285.7,292.3,297.8,292.1,314.5,307.1,292.2,283.1,280.0,287.7,296.0,312.8,298.2,284.2,279.5,279.5,282.5,287.8,308.6,303.0,279.0,269.5,282.2,282.6,298.5,308.0,293.5,271.2,277.9,284.5,274.6,284.9,307.5,289.5,273.4,268.7,272.6,279.9,285.3,306.5,288.9,273.6,259.4,263.9,276.6,280.8,303.2,290.8,275.7,269.4,272.0,271.3,278.7,296.4,285.2,264.4,262.6,266.2,271.5,278.9,290.4,285.7,268.8,268.1,268.0,267.0,276.6,305.4,288.3,274.5,271.7,261.8,270.6,280.9,299.2,287.2,267.8,263.7,259.0,268.4,276.0,297.6,283.3,269.7,266.5,266.5,270.7,279.9,295.8,285.0,265.8,265.5,266.1,272.5,275.1,302.1,283.6,265.9,264.3,265.0,272.6,279.4,295.6,284.7,275.6,266.8,264.2,273.1,277.1,308.8,283.8,274.1,270.7,265.0,276.3,289.4,305.7,293.2,278.3,271.5,274.5,277.0,290.4,302.5,297.8,275.0,269.1,277.3,287.0,294.5,307.0,300.3,278.1,275.9,279.2,274.0,294.5,308.1,297.9,277.2,273.5,278.3,289.8,303.7,315.4,308.4,285.5,275.4,286.1,291.8,298.8,320.3,309.9,286.6,280.7,288.3,292.8,302.8,326.7,318.2,292.1,293.1,296.6,300.3,312.1,324.9,318.0,305.7,297.3,294.2,303.7,316.8,331.8,316.6,307.6,293.0,302.5,305.0,310.8,339.0,324.1,300.5,304.1,302.6,301.2,316.6,338.9,328.9,309.6,305.6,309.9,311.6,327.7,342.1,331.2,314.7,304.8,308.7,322.1,327.8,343.9,334.8,314.0,313.5,312.2,320.5,323.5,353.6,334.7,312.8,314.7,316.5,323.1,328.3,352.9,354.2,317.0,319.8,319.6,326.0,328.4,349.4,344.2,324.6,327.6,320.6,328.5,349.7,353.3,341.1,326.9,323.1,329.0,330.4,337.1,359.3,357.3,334.0,314.1,326.9,328.2,344.4,359.4,356.0,334.2,330.2,329.6,332.9,344.5,366.5,351.6,330.2,332.8,330.6,333.6,340.9,359.9,347.7,321.1,332.4,332.7,333.6,348.7,364.3,352.0,322.7,327.6,332.7,341.0,351.9,368.2,345.8,323.6,330.6,330.4,338.0,343.6,362.9,344.0,333.7,326.0,331.1,335.4,342.9,362.5,349.0,334.0,328.7,326.4,330.0,349.2,359.6,351.7,331.1,323.1,324.1,331.3,341.6,360.8,341.0,325.4,323.1,331.6,319.5,340.4,354.2,345.7,323.7,322.8,329.3,328.1,338.1,355.5,338.6,325.4,318.1,317.3,324.0,332.8,354.4,338.8,318.4,322.0,321.7,326.4,333.3,348.1,334.4,316.5,317.0,315.2,312.4,327.7,339.7,333.6,309.7,305.0,312.1,314.8,318.0,345.2,338.4,305.3,314.0,305.5,309.8,320.6,333.1,331.6,309.9,300.4,303.8,302.4,316.5,339.2,316.1,302.7,300.6,305.7,310.4,312.7,329.1,321.4,299.6,295.4,302.5,308.4,312.2,327.9,318.5,290.2,293.2,290.6,307.9,310.8,326.0,312.2,284.5,293.0,298.2,292.3,307.5,325.3,303.8,295.3,292.5,289.6,292.0,305.0,313.3,307.5,292.9,279.3,289.9,287.9,290.9,316.4,300.6,287.4,277.1,287.6,284.2,298.2,312.1,300.9,288.6,280.4,279.7,280.0,299.3,315.3,298.8,282.9,273.5,275.3,279.9,294.4,311.9,295.5,283.3,279.3,278.6,285.9,290.4,309.0,299.2,279.0,278.2,271.8,286.4,287.5,307.9,290.9,280.7,279.4,280.5,283.5,283.9,304.9,294.2,274.2,278.5,276.7,279.9,291.9,304.2,292.4,274.5,276.1,277.5,282.5,294.6,302.9,294.2,279.2,269.3,274.7,285.0,295.5,313.5,297.5,278.7,280.0,276.4,283.4,297.5,309.0,296.2,280.8,279.5,281.3,284.2,296.0,305.7,296.9,283.3,275.2,275.8,280.7,292.1,313.4,298.3,285.7,287.9,282.9,292.9,299.3,312.0,303.9,283.3,286.7,281.4,295.7,303.1,311.1,310.8,296.3,283.3,292.9,286.2,304.8,315.6,312.6,286.0,279.1,293.7,305.7,304.7,328.8,314.5,295.2,295.5,302.1,295.1,312.8,330.4,311.8,306.5,304.3,295.3,310.5,314.3,332.0,327.2,304.6,301.5,308.8,312.5,321.4,330.8,318.6,312.0,300.3,307.2,306.8,320.9,335.1,335.3,307.2,307.4,309.6,319.8,319.8,343.9,331.7,317.2,313.5,312.3,319.7,327.8,349.7,335.9,316.2,315.3,319.4,331.5,331.0,352.7,345.8,314.2,312.0,316.8,325.6,346.3,356.6,348.3,325.1,312.6,315.7,333.5,340.6,353.1,351.3,323.1,330.2,333.9,329.5,338.6,364.8,345.5,335.7,323.9,334.3,335.8,344.1,360.7,353.6,327.4,330.2,332.1,340.8,343.4,373.6,353.8,332.8,339.2,342.7,339.6,347.0,368.9,354.4,338.2,341.9,339.5,342.8,353.8,370.4,362.2,344.6,335.8,339.9,353.3,355.5,371.3,368.4,342.3,334.1,343.3,341.1,352.8,374.2,360.5,340.1,337.0,338.9,350.0,352.5,371.2,369.6,341.3,345.5,346.8,344.9,349.9,375.3,364.2,347.3,339.7,346.2,350.9,351.0,378.9,361.8,340.7,337.6,348.2,348.5,347.3,372.7,359.6,341.3,335.8,333.9,347.0,349.6,369.6,356.5,337.8,339.5,339.8,339.3,348.0,367.7,361.1,339.5,335.7,335.1,339.1,350.7,360.2,361.7,333.8,330.4,339.7,338.9,347.8,363.0,346.7,335.3,335.0,328.2,340.9,340.6,359.8,352.3,331.9,330.3,326.1,328.6,334.8,355.0,343.1,323.3,325.8,323.5,321.8,349.2,353.5,339.3,330.9,326.1,318.4,320.6,332.1,358.1,339.9,319.4,318.1,324.5,317.7,331.2,344.7,346.5,326.6,318.6,315.8,322.5,321.0,348.0,329.1,310.6,308.6,311.5,318.8,328.8,344.5,327.2,315.2,307.6,314.3,309.4,311.6,338.2,336.3,311.1,303.9,309.8,311.8,321.2,334.8,324.7,306.8,298.9,298.6,307.2,320.1,336.3,323.3,304.9,308.8,301.1,307.8,321.1,331.0,319.5,304.2,302.4,298.5,302.3,310.9,323.3,320.2,296.4,286.2,294.1,291.5,304.0,325.8,309.7,299.4,284.9,293.6,298.5,311.8,327.4,312.3,293.5,288.6,295.2,291.8,306.2,321.6,310.7,290.5,295.8,286.5,293.9,303.9,323.0,310.2,292.0,290.0,282.0,291.9,296.8,320.6,302.8,285.6,285.1,292.8,293.5,302.3,324.7,303.3,280.6,283.3,285.9,295.9,309.5,313.7,316.9,295.3,288.4,288.6,300.9,301.6,317.4,307.9,284.0,287.5,287.2,293.1,303.4,315.8,313.5,286.3,290.1,282.3,294.3,299.8,321.4,306.8,282.9,283.4,290.4,296.8,298.7,314.3,307.6,292.5,287.1,288.7,299.6,310.4,327.8,309.4,295.8,291.0,288.4,302.0,309.2,325.2,321.2,300.9,297.7,301.5,303.9,306.4,328.3,322.3,297.6,297.2,301.1,309.7,319.6,336.4,320.5,307.4,302.3,302.0,312.5,319.6,333.0,329.6,306.0,305.9,299.9,310.4,317.2,335.6,320.4,319.1,306.4,310.5,318.5,324.1,345.2,326.2,314.9,309.0,315.2,318.5,322.8,339.4,331.3,320.9,316.2,318.6,313.5,321.3,348.1,337.9,319.3,319.7,320.1,320.6,332.4,355.0,343.3,325.2,331.1,323.6,329.6,335.7,356.8,348.9,331.6,325.2,329.9,333.1,335.9,348.8,359.7,336.3,329.2,325.0,331.4,352.4,354.3,352.7,339.9,333.5,338.4,339.4,359.9,364.7,351.8,340.8,341.9,338.4,347.3,351.4,367.2,366.0,349.1,345.3,339.9,341.4,351.7,373.9,365.5,347.6,336.2,345.1,348.7,359.4,377.3,364.9,350.4,344.8,347.5,348.2,362.8,379.1,359.4,352.0,345.3,352.3,352.2,362.7,382.2,369.5,350.0,340.8,357.6,348.1,363.2,385.4,372.5,355.4,352.3,356.5,356.7,377.3,379.7,372.8,352.5,347.9,353.3,362.1,363.5,381.5,375.3,356.6,358.3,356.6,357.4,365.2,385.3,371.8,349.0,350.4,351.7,355.4,364.5,390.9,374.9,357.8],"ffStart":"2016-01-01","r1Index0":"2016-01-04","ffStd":[26.7,3.7,2.6],"wd":[308.2,304.7,306.7,310.9,320.2,338.0,326.8],"watch":[537.0,621.0,438.0,661.0,572.0,542.0,557.0,555.0,622.0,700.0,700.0,718.0,593.0,616.0,818.0,798.0,886.0,843.0,724.0,877.0,853.0,843.0,796.0,860.0,866.0,944.0,912.0,1015.0,889.0,978.0,995.0,928.0,924.0,1071.0,1056.0,1030.0,1079.0,1029.0,1099.0,1064.0,1156.0,1249.0,1215.0,1331.0,1263.0,1353.0,1333.0,1454.0,1510.0,1538.0,1579.0,1720.0,1770.0,1657.0,1845.0,1717.0,1821.0,1900.0,1962.0,1937.0,2002.0,2095.0,2093.0,2142.0,2265.0,2326.0,2311.0,2361.0,2404.0,2423.0,2464.0,2478.0,2624.0,2625.0,2667.0,2732.0,2797.0,2895.0,2839.0,2876.0,2957.0,2939.0,3111.0,3136.0,3167.0,3108.0,3149.0,3158.0,3115.0,3058.0,2964.0,3112.0,3024.0,2984.0,3078.0,3035.0,2920.0,2989.0,2969.0,3035.0,2851.0,2932.0,2937.0,3020.0,2860.0,2739.0,2822.0,2911.0,2934.0,2979.0,2889.0,2807.0,2898.0,2834.0,2813.0,2816.0,2881.0,2741.0,2724.0,2771.0],"watchStart":"2009-01-01","pen":[[1000.0,[41,56,66,86,96,106]],[10000.0,[41,86]],[30000.0,[86]],[100000.0,[]],[1000000.0,[]]],"binseg":[41,86],"extrap":[1298,1652,-353],"r1m_full":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-0.2,-0.1,0.0,0.1,0.0,0.1,-0.0,0.1,-0.1,0.0,0.1,0.1,0.1,0.0,-0.2,-0.1,-0.1,-0.3,-0.0,0.1,0.0,-0.0,0.2,-0.0,0.0,0.2,0.1,0.1,-0.1,0.0,0.1,0.1,0.1,-0.0,0.0,-0.1,-0.1,-0.0,0.1,0.1,-0.3,-0.1,-0.0,0.2,0.1,0.1,0.1,0.2,-0.1,0.0,-0.2,-0.1,0.1,0.1,-0.0,-0.3,-0.1,0.1,0.3,-0.1,-0.1,-0.1,0.1,0.2,-0.0,0.0,0.0,0.1,-0.1,-0.0,0.1,0.1,-0.0,-0.3,-0.0,0.1,0.0,-0.3,-0.0,-0.2,0.3,0.2,-0.2,-0.3,-0.1,0.4,0.2,-0.1,-0.2,0.0,0.1,0.0,-0.2,-0.1,-0.0,0.1,0.1,0.2,0.0,-0.2,-0.1,-0.2,-0.1,0.0,0.1,-0.0,0.1,0.3,0.1,0.1,-0.2,-0.2,-0.1,0.2,0.1,-0.2,-0.2,-0.1,-0.2,0.1,0.1,0.0,-0.2,-0.1,-0.1,-0.1,0.1,-0.2,-0.0,0.1,0.1,0.2,0.2,0.2,-0.1,-0.1,-0.3,-0.1,-0.2,-0.1,-0.0,0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,0.1,-0.0,-0.2,0.1,0.3,0.0,0.0,-0.1,-0.2,-0.0,-0.0,-0.1,0.0,0.0,-0.1,-0.2,-0.1,0.1,0.0,0.0,0.2,-0.1,-0.2,-0.1,-0.0,-0.1,0.0,0.0,0.1,-0.1,0.0,-0.1,0.1,-0.1,-0.2,-0.2,0.0,0.1,-0.0,0.0,0.1,0.2,0.0,-0.3,0.0,0.0,0.3,-0.1,-0.1,-0.3,-0.2,0.2,0.2,0.2,0.1,-0.1,-0.2,-0.1,-0.1,0.1,0.1,0.1,-0.2,-0.1,0.0,-0.0,-0.1,-0.0,-0.0,-0.1,-0.1,-0.1,-0.1,0.0,-0.1,0.1,0.0,-0.1,0.1,0.3,0.2,-0.1,0.1,-0.2,-0.1,0.1,-0.0,0.1,0.1,-0.0,-0.0,0.0,-0.0,-0.1,0.0,0.2,0.1,-0.1,0.0,-0.1,0.0,0.0,0.0,0.2,0.0,-0.3,-0.1,0.1,0.1,0.0,-0.1,0.1,-0.2,0.0,-0.2,0.1,0.2,-0.1,-0.1,-0.0,-0.2,-0.3,-0.0,0.5,0.2,0.1,0.0,0.1,-0.0,-0.1,-0.1,-0.1,0.0,-0.2,-0.1,0.4,0.1,-0.1,-0.1,-0.1,0.1,-0.1,-0.1,-0.2,0.3,0.3,-0.1,-0.0,-0.1,-0.0,-0.1,0.3,0.3,-0.1,-0.0,-0.2,-0.1,-0.1,0.1,0.2,0.2,0.2,0.0,0.2,0.2,-0.2,-0.4,-0.0,0.1,-0.0,0.0,0.2,0.4,0.0,-0.4,-0.6,-0.0,0.3,0.5,0.2,-0.0,-0.1,-0.1,-0.0,0.0,0.2,0.0,-0.0,-0.1,0.0,-0.1,-0.1,-0.1,-0.1,0.0,0.1,0.2,-0.1,0.1,0.1,0.1,0.0,-0.1,0.1,0.2,0.3,0.2,-0.2,-0.4,-0.2,0.4,0.0,0.1,-0.1,-0.0,-0.2,0.0,0.1,0.1,0.1,0.1,0.0,0.1,0.1,-0.1,-0.1,-0.0,0.2,-0.0,-0.1,-0.1,-0.1,0.1,0.2,0.1,-0.0,-0.2,0.1,0.2,0.0,-0.2,0.1,0.1,0.1,-0.1,0.1,0.1,-0.2,-0.1,0.1,-0.1,0.2,-0.0,-0.0,0.0,-0.1,0.1,0.1,0.1,0.2,-0.1,-0.1,0.0,-0.2,-0.2,-0.1,0.1,0.1,-0.1,0.0,-0.0,-0.0,-0.2,-0.1,0.2,0.1,0.1,0.4,0.0,-0.3,-0.2,-0.1,0.1,0.2,0.1,-0.1,-0.2,-0.1,-0.1,-0.0,0.2,-0.1,-0.2,0.1,0.2,0.2,0.1,-0.2,-0.1,0.1,-0.0,0.2,0.2,-0.0,-0.1,-0.2,-0.1,-0.3,0.1,0.1,0.3,-0.1,-0.3,-0.1,-0.0,0.2,-0.1,-0.1,0.1,0.0,0.0,0.2,-0.0,-0.2,-0.1,-0.0,-0.2,0.0,0.1,-0.1,0.1,-0.1,-0.2,0.1,0.0,0.2,-0.1,0.2,-0.0,0.1,-0.2,-0.1,0.1,0.0,0.1,-0.0,0.1,-0.1,-0.3,-0.1,-0.1,-0.0,0.2,0.2,-0.0,-0.2,0.0,-0.0,-0.0,0.2,-0.1,-0.0,0.1,-0.1,-0.2,-0.2,0.1,-0.0,0.0,-0.1,0.2,0.1,-0.1,-0.0,-0.2,-0.1,-0.0,0.0,0.2,0.0,0.1,-0.0,-0.2,0.0,0.1,0.1,-0.0,-0.1,-0.1,-0.3,-0.2,0.0,-0.1,0.2,0.3,0.1,-0.0,-0.2,-0.0,-0.1,-0.0,0.1,-0.1,-0.2,0.1,0.1,0.2,-0.1,0.0,-0.1,-0.0,-0.0,-0.3,-0.3,-0.0,-0.0,0.1,0.1,-0.0,0.1,0.3,-0.1,0.0,-0.1,-0.4,-0.1,0.1,0.0,0.0,0.1,-0.1,-0.1,0.1,-0.0,-0.1,0.1,0.1,0.1,-0.2,0.1,-0.2,0.1,0.2,0.2,-0.2,0.1,-0.1,-0.0,-0.0,0.1,-0.2,-0.0,-0.1,0.0,0.3,0.0,-0.2,0.0,0.0,0.1,-0.0,-0.2,-0.1,0.2,0.0,-0.1,0.1,0.1,0.0,-0.3,-0.3,-0.0,0.2,0.3,0.4,-0.1,-0.3,-0.1,0.1,-0.2,0.1,-0.1,0.1,0.1,-0.0,-0.1,0.1,-0.0,0.0,-0.1,0.1,0.2,0.2,-0.1,0.1,-0.2,-0.3,-0.2,0.1,0.2,0.4,-0.0,-0.3,-0.3,-0.1,0.2,0.3,0.1,-0.1,-0.1,0.0,0.2,0.0,-0.2,-0.1,0.1,0.0,0.0,-0.2,0.2,0.0,-0.1,0.1,0.2,-0.1,0.2,0.0,0.1,0.0,0.2,-0.1,-0.0,0.1,0.1,-0.2,-0.3,0.1,-0.1,0.2,0.3,0.1,-0.2,-0.1,-0.0,0.1,-0.0,-0.0,0.2,0.1,0.1,0.0,0.0,-0.3,-0.0,0.2,-0.1,0.1,0.1,0.1,-0.0,-0.1,0.1,0.1,-0.0,0.0,0.1,0.0,0.2,-0.0,-0.3,-0.2,0.2,0.2,0.1,0.0,0.0,0.0,-0.2,0.2,-0.1,-0.2,0.1,0.2,0.0,-0.1,-0.1,-0.1,0.1,-0.1,0.1,0.1,-0.1,-0.0,0.0,0.2,0.2,0.1,-0.1,-0.0,0.1,0.1,0.0,-0.1,-0.3,0.1,0.1,-0.2,0.2,0.2,0.1,0.0,-0.2,-0.0,-0.1,-0.1,0.1,0.3,-0.1,-0.1,-0.4,-0.0,0.2,0.2,0.1,-0.0,-0.2,0.0,0.0,-0.0,-0.1,-0.1,-0.1,0.1,0.3,-0.2,-0.0,0.2,0.2,-0.1,-0.3,-0.2,0.2,0.0,-0.1,0.0,0.1,-0.1,0.0,0.1,0.4,0.1,-0.3,-0.4,-0.1,-0.2,-0.0,-0.2,0.1,0.0,0.1,0.3,0.1,-0.1,-0.1,0.2,0.1,0.0,-0.2,-0.2,0.3,0.4,-0.0,-0.0,-0.1,-0.1,-0.1,-0.2,0.1,-0.2,-0.2,-0.2,0.2,0.3,0.1,0.0,0.0,0.2,-0.2,0.0,-0.0,-0.2,-0.1,0.2,0.0,-0.2,-0.2,-0.1,-0.0,0.1,0.1,-0.2,-0.0,-0.1,0.2,0.1,-0.1,-0.1,-0.1,0.1,0.2,0.4,0.1,-0.2,-0.3,-0.2,-0.1,0.0,-0.1,-0.0,0.1,0.1,0.0,-0.0,0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.2,0.0,-0.1,0.1,-0.1,0.2,0.0,0.2,-0.0,0.1,0.1,-0.4,-0.3,0.1,0.3,0.3,-0.0,-0.2,0.1,-0.1,-0.3,-0.1,0.1,-0.0,-0.1,-0.0,-0.0,-0.1,-0.0,-0.0,-0.1,-0.1,0.1,-0.1,0.1,-0.0,0.0,-0.1,0.1,-0.2,-0.2,-0.1,0.1,0.1,-0.1,-0.1,0.1,0.1,-0.1,0.1,0.2,0.0,0.0,-0.1,0.1,-0.1,0.0,0.1,-0.0,-0.3,0.1,0.0,-0.0,0.0,-0.1,-0.0,-0.0,0.1,-0.1,0.1,0.3,0.2,-0.1,-0.3,-0.1,0.2,0.2,0.0,-0.1,-0.2,-0.1,0.0,-0.0,0.0,-0.2,-0.1,-0.1,-0.1,-0.1,0.4,0.1,0.1,-0.1,-0.2,-0.1,-0.1,0.1,0.2,0.2,-0.1,-0.6,-0.1,0.3,0.4,0.0,-0.3,-0.1,-0.2,0.0,0.1,0.0,0.0,-0.1,0.2,0.1,-0.0,-0.1,0.1,0.1,-0.0,-0.1,-0.3,-0.0,0.2,0.3,0.1,-0.0,-0.3,-0.3,0.1,0.6,-0.0,-0.2,-0.2,0.0,0.1,-0.2,0.2,0.2,0.1,0.0,0.1,0.2,-0.4,-0.1,0.1,0.2,-0.0,-0.0,-0.0,0.1,0.3,-0.0,0.0,-0.3,-0.3,-0.0,0.1,0.1,-0.1,-0.1,-0.0,0.3,0.1,0.1,-0.0,-0.0,-0.1,0.1,-0.0,-0.1,-0.2,-0.2,0.3,0.2,0.2,-0.0,0.1,0.1,-0.1,-0.1,-0.1,0.1,-0.3,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"r2m_full":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,-0.0,-0.1,-0.1,0.1,0.1,-0.0,0.0,-0.0,0.1,-0.1,0.1,0.0,0.1,0.1,0.1,-0.1,-0.1,0.0,0.1,0.1,-0.0,-0.2,-0.0,-0.0,0.0,0.2,0.1,-0.0,-0.1,-0.1,-0.0,0.1,0.0,-0.1,-0.0,0.0,-0.1,-0.1,-0.1,0.1,-0.1,0.1,-0.0,-0.1,-0.1,0.3,0.1,-0.0,0.0,-0.1,-0.1,0.2,-0.0,0.1,0.1,-0.2,-0.0,0.1,-0.0,-0.0,-0.0,0.1,0.1,-0.0,-0.1,-0.0,0.1,-0.0,-0.0,0.1,0.2,0.0,-0.0,-0.0,-0.1,-0.2,0.0,0.2,-0.0,-0.0,0.0,0.0,0.2,-0.1,-0.1,-0.0,-0.0,-0.2,-0.0,0.2,0.2,-0.0,-0.1,-0.0,0.0,-0.1,0.0,0.1,0.1,-0.2,-0.1,0.0,0.1,0.1,0.1,0.0,-0.0,-0.2,-0.1,-0.0,0.2,0.1,-0.2,-0.0,0.0,0.0,-0.1,0.1,0.1,0.0,-0.1,-0.1,-0.0,-0.1,-0.0,0.1,0.0,0.1,-0.0,0.1,0.0,-0.0,-0.2,-0.1,-0.0,0.1,0.1,0.1,0.2,-0.1,-0.4,-0.3,0.1,0.2,0.3,0.1,0.0,-0.0,-0.2,-0.1,0.0,0.1,0.0,0.1,-0.0,-0.1,0.0,-0.1,-0.1,-0.1,0.0,0.1,0.1,-0.1,0.0,0.0,0.0,-0.0,-0.2,0.1,0.2,0.2,0.0,-0.2,-0.3,-0.1,0.2,-0.0,0.2,-0.1,0.0,-0.0,-0.0,-0.1,0.0,0.1,0.1,0.1,0.0,0.1,-0.1,-0.1,0.0,0.1,-0.0,-0.2,-0.2,-0.1,0.1,0.1,0.1,-0.0,-0.1,0.1,0.3,-0.0,-0.1,0.1,-0.0,-0.0,-0.1,0.0,0.1,-0.1,-0.0,0.1,-0.1,-0.0,0.0,0.0,0.2,-0.0,-0.0,-0.1,0.0,0.1,0.1,-0.0,0.0,-0.1,-0.1,-0.0,0.1,-0.0,-0.2,0.1,0.0,-0.1,-0.2,0.0,0.3,0.2,-0.0,0.2,0.1,-0.1,-0.1,-0.0,0.0,0.0,-0.1,-0.1,0.1,0.1,0.0,0.1,0.1,0.1,-0.1,0.0,0.1,-0.0,0.0,-0.0,-0.0,-0.0,-0.1,0.1,0.2,0.1,-0.2,-0.3,-0.0,-0.1,0.1,0.1,0.2,0.0,-0.2,0.0,0.1,0.2,-0.1,-0.2,0.0,0.0,0.0,0.0,0.1,-0.1,-0.1,0.1,-0.0,-0.1,0.0,0.0,0.1,-0.0,-0.1,-0.0,-0.0,0.2,-0.1,0.2,-0.1,0.0,-0.0,0.0,0.1,-0.0,-0.0,-0.2,0.0,0.1,0.0,0.1,-0.0,-0.0,0.2,0.1,-0.0,-0.1,-0.0,0.0,-0.1,0.0,-0.1,0.0,0.1,-0.0,0.0,-0.1,-0.0,-0.2,-0.0,-0.1,0.0,-0.1,-0.1,-0.1,-0.1,0.1,0.1,-0.1,-0.1,-0.1,-0.0,0.1,-0.3,0.0,0.0,-0.0,-0.0,0.1,-0.0,-0.2,-0.1,-0.1,-0.1,0.0,0.1,0.0,0.0,-0.1,0.0,0.1,0.1,0.1,-0.1,-0.1,0.0,-0.0,0.0,-0.0,0.1,-0.1,-0.0,-0.1,-0.1,-0.1,0.1,0.1,-0.0,-0.1,-0.1,0.0,0.2,0.0,0.0,-0.0,-0.2,-0.1,0.0,0.1,0.1,0.0,-0.1,-0.0,0.1,0.0,-0.0,0.1,0.1,0.1,-0.1,0.1,-0.1,0.0,0.2,0.1,-0.3,-0.1,0.0,-0.0,0.1,0.1,-0.1,0.0,-0.1,-0.1,0.2,0.0,-0.1,0.0,0.1,0.0,-0.1,-0.1,0.0,0.1,0.0,-0.0,0.0,0.0,-0.1,-0.2,0.0,0.0,0.0,0.1,0.2,-0.0,-0.2,0.1,0.0,-0.0,-0.0,-0.2,0.1,0.1,0.0,0.0,0.2,0.0,-0.2,-0.1,0.0,0.1,0.0,-0.0,0.1,-0.0,-0.1,-0.1,0.2,0.1,0.0,-0.1,-0.1,-0.1,0.0,0.1,0.2,0.1,0.0,-0.2,-0.1,0.2,0.0,-0.0,-0.0,0.1,-0.1,-0.1,-0.0,0.1,0.1,0.0,0.1,0.0,-0.1,-0.0,-0.1,0.0,-0.1,0.0,0.0,0.2,0.1,0.0,-0.1,-0.1,-0.0,-0.2,0.1,0.4,0.3,-0.1,-0.2,-0.3,-0.1,-0.0,0.0,0.2,0.1,0.0,-0.1,0.0,-0.1,0.0,0.1,-0.0,0.1,0.1,0.1,-0.0,-0.1,-0.1,0.1,-0.0,-0.0,0.0,0.0,0.2,-0.0,-0.2,-0.2,-0.0,0.2,0.3,0.1,-0.2,0.0,-0.1,0.1,-0.0,0.0,0.0,0.1,-0.0,-0.1,-0.1,-0.0,-0.0,-0.1,0.1,0.1,-0.0,-0.1,0.0,0.2,0.2,0.1,-0.1,-0.1,-0.0,0.1,0.1,-0.1,-0.3,0.0,0.1,-0.1,0.0,0.1,0.1,-0.0,-0.1,0.1,0.0,-0.1,0.1,0.0,-0.0,-0.0,-0.2,0.0,0.1,0.1,-0.0,-0.1,-0.1,0.1,0.0,0.1,0.1,0.0,-0.1,0.0,0.2,-0.1,0.0,0.1,0.2,-0.0,-0.3,-0.1,0.1,-0.2,-0.0,0.2,0.2,0.0,-0.0,-0.0,0.2,0.1,-0.0,-0.1,-0.0,-0.1,-0.1,-0.1,0.1,-0.0,-0.1,0.1,-0.0,0.0,0.0,0.0,0.1,-0.1,-0.2,-0.1,0.2,0.3,0.0,0.1,-0.1,-0.1,-0.2,-0.0,0.2,-0.0,-0.1,-0.2,0.1,0.2,-0.0,-0.0,-0.0,-0.0,-0.1,0.1,0.1,-0.1,0.0,0.1,-0.0,-0.0,-0.1,0.0,0.1,0.0,0.0,-0.2,0.1,-0.2,0.1,0.0,0.1,0.0,-0.1,0.0,0.0,0.2,-0.0,-0.1,0.0,-0.1,0.0,0.0,-0.2,-0.1,0.1,0.1,0.0,0.0,0.1,-0.0,0.1,-0.0,-0.1,0.0,0.0,0.1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]};
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const nf=(n,d)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const C={o:"#B8530F",a:"#C98A1E",b:"#5B4330",r:"#8A3410",g:"#9A8B72",ink:"#33291E"};
+
+/* progress + nav */
+const prog=$("#prog"),links=$$(".topbar a"),secs=links.map(a=>$(a.getAttribute("href")));
+function onScroll(){const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";let cur=-1;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<120)cur=i});links.forEach((a,i)=>a.classList.toggle("active",i===cur))}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+/* date helpers */
+const mLabel=(y0,m0,i)=>new Date(Date.UTC(y0,m0+i,1)).toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
+const dLabel=(i,base=Date.UTC(2016,0,1))=>new Date(base+i*864e5).toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const monthLabels=(y0,m0,n)=>Array.from({length:n},(_,i)=>mLabel(y0,m0,i));
+const yearTicks=(y0,m0,n)=>{const t=[];for(let i=0;i<n;i++){const d=new Date(Date.UTC(y0,m0+i,1));if(d.getUTCMonth()===0)t.push({i,label:String(d.getUTCFullYear())})}return t};
+
+/* nice ticks */
+function niceTicks(lo,hi,k){const raw=(hi-lo)/k,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,s=(f<1.5?1:f<3?2:f<7?5:10)*p;const t=[];for(let v=Math.ceil(lo/s)*s;v<=hi+1e-9;v+=s)t.push(+v.toFixed(10));return t}
+const tickFmt=(v,step)=>Math.abs(v)>=1000?fmt(v):(Math.abs(v)<10?nf(v,v%1?2:0):nf(v,Math.abs(v)<100&&v%1?1:0));
+
+function legend(root,series){root.innerHTML='<div class="lg">'+series.map(s=>`<span><svg width="30" height="10" aria-hidden="true"><line x1="0" y1="5" x2="30" y2="5" stroke="${s.color}" stroke-width="${s.w||2.5}" stroke-dasharray="${s.dash||""}" opacity="${s.op||1}"/></svg>${s.name}</span>`).join("")+"</div>"}
+
+/* line chart */
+function lineChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=12,pb=o.noX?8:26,N=o.labels.length;
+  let lo=Infinity,hi=-Infinity;o.series.forEach(s=>s.y.forEach(v=>{if(v!=null&&isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.06||1;if(o.ymin==null)lo-=pad;if(o.ymax==null)hi+=pad;
+  const x=i=>pl+i*(W-pl-pr)/(N-1),y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb);
+  root.innerHTML='<div class="chw"><div class="tip"></div></div>';const wrap=$(".chw",root),tip=$(".tip",wrap);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Line chart",tabindex:0});wrap.insertBefore(svg,tip);
+  niceTicks(lo,hi,o.yt||4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9","stroke-width":1},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  if(o.zero&&lo<0&&hi>0)el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  (o.xt||[]).forEach(t=>{el("line",{x1:x(t.i),x2:x(t.i),y1:H-pb,y2:H-pb+4,stroke:"#66573F"},svg);const e=el("text",{x:x(t.i),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);e.textContent=t.label});
+  (o.vlines||[]).forEach(v=>{el("line",{x1:x(v.i),x2:x(v.i),y1:pt,y2:H-pb,stroke:v.color||C.r,"stroke-width":2,"stroke-dasharray":v.dash||"6 4"},svg);if(v.label){const t=el("text",{x:x(v.i)+4,y:pt+11,"font-size":11.5,"font-weight":700,fill:v.color||C.r},svg);t.textContent=v.label}});
+  o.series.forEach(s=>{let d="",pen=false;s.y.forEach((v,i)=>{if(v==null||!isFinite(v)){pen=false;return}d+=(pen?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1);pen=true});
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":s.w||2.5,"stroke-dasharray":s.dash||"",opacity:s.op||1,"stroke-linejoin":"round"},svg)});
+  (o.marks||[]).forEach(m=>{el("circle",{cx:x(m.i),cy:y(m.v),r:6,fill:m.color||C.r,stroke:"#FFFBF1","stroke-width":2},svg);if(m.label){const t=el("text",{x:x(m.i)+(m.dx||9),y:y(m.v)+(m.dy||4),"font-size":11.5,"font-weight":700,fill:m.color||C.r,"text-anchor":m.anchor||"start"},svg);t.textContent=m.label}});
+  const g=el("g",{style:"display:none"},svg),gl=el("line",{y1:pt,y2:H-pb,stroke:"#33291E","stroke-width":1,"stroke-dasharray":"3 3"},g),dots=o.series.map(s=>el("circle",{r:4,fill:s.color,stroke:"#FFFBF1","stroke-width":1.5},g));
+  let cur=Math.floor(N/2);
+  function show(i){cur=i;g.style.display="";const px=x(i);gl.setAttribute("x1",px);gl.setAttribute("x2",px);
+    let h=`<b>${o.labels[i]}</b>`;o.series.forEach((s,k)=>{const v=s.y[i];if(v==null||!isFinite(v)){dots[k].style.display="none";return}dots[k].style.display="";dots[k].setAttribute("cx",px);dots[k].setAttribute("cy",y(v));h+=`<br>${s.name}: ${(o.vFmt||fmt)(v)}`});
+    tip.innerHTML=h;tip.style.display="block";const pct=px/W*100;tip.style.left=pct>60?"auto":`calc(${pct}% + 10px)`;tip.style.right=pct>60?`calc(${100-pct}% + 10px)`:"auto";tip.style.top="0";
+    o.onHover&&o.onHover(i)}
+  svg.addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W;show(Math.max(0,Math.min(N-1,Math.round((px-pl)/(W-pl-pr)*(N-1)))))});
+  svg.addEventListener("pointerleave",()=>{g.style.display="none";tip.style.display="none"});
+  svg.addEventListener("keydown",e=>{if(e.key==="ArrowRight"){show(Math.min(N-1,cur+1));e.preventDefault()}if(e.key==="ArrowLeft"){show(Math.max(0,cur-1));e.preventDefault()}});
+  svg.addEventListener("blur",()=>{g.style.display="none";tip.style.display="none"});
+}
+/* bar chart (grouped) */
+let barId=0;
+function barChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=22,pb=28,N=o.labels.length,ns=o.series.length,id="h"+(barId++);
+  let lo=Math.min(0,...o.series.flatMap(s=>s.v)),hi=Math.max(0,...o.series.flatMap(s=>s.v));if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.08;hi+=pad;if(lo<0)lo-=pad;
+  const y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb),gw=(W-pl-pr)/N,bw=gw*.78/ns;
+  root.innerHTML="";const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Bar chart"});root.appendChild(svg);
+  const defs=el("defs",{},svg),pat=el("pattern",{id,width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"},defs);el("rect",{width:6,height:6,fill:"#F5DDBD"},pat);el("rect",{width:3,height:6,fill:C.b},pat);
+  niceTicks(lo,hi,4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9"},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  o.labels.forEach((l,i)=>{const t=el("text",{x:pl+gw*(i+.5),y:H-9,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);t.textContent=l;
+    o.series.forEach((s,k)=>{const v=s.v[i];if(v==null)return;const bx=pl+gw*i+gw*.11+bw*k,y0=y(0),y1=y(v);
+      const r=el("rect",{x:bx,y:Math.min(y0,y1),width:bw,height:Math.max(1,Math.abs(y1-y0)),fill:s.hatch?`url(#${id})`:s.color,stroke:s.hatch?C.b:"none"},svg);el("title",{},r).textContent=`${l}: ${(o.vFmt||fmt)(v)}`;
+      if(o.labelsOn!==false&&ns<=2){const t2=el("text",{x:bx+bw/2,y:(v>=0?y1-4:y1+12),"text-anchor":"middle","font-size":ns>1?9.5:11,fill:C.ink},svg);t2.textContent=(o.vFmt||fmt)(v)}})});
+}
+
+/* ---------- static: window shapes ---------- */
+(function(){
+  const W=720,H=190,svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Two rows of points. Trailing window covers the three points up to t. Centered window covers one point before, t, and one point after."});
+  const xs=i=>60+i*58;
+  function row(y0,boxFrom,boxTo,label,tIdx){
+    const t=el("text",{x:8,y:y0+4,"font-size":13,"font-weight":700,fill:C.b},svg);t.textContent=label;
+    for(let i=0;i<10;i++){const bump=[0,8,-6,10,-4,12,-2,9,-8,6][i];el("circle",{cx:xs(i)+40,cy:y0-bump,r:5,fill:i===tIdx?C.r:C.g},svg)}
+    el("rect",{x:xs(boxFrom)+40-14,y:y0-30,width:(boxTo-boxFrom)*58+28,height:60,rx:10,fill:"rgba(217,121,43,.18)",stroke:C.o,"stroke-width":2,"stroke-dasharray":"5 3"},svg);
+    const tt=el("text",{x:xs(tIdx)+40,y:y0+46,"text-anchor":"middle","font-size":12,"font-weight":700,fill:C.r},svg);tt.textContent="t";
+  }
+  row(55,4,6,"Trailing",6);row(145,5,7,"Centered",6);
+  [["window: past only",xs(5)+40,28],["window: both sides",xs(6)+40,118]].forEach(([s,xx,yy])=>{const t=el("text",{x:xx,y:yy,"text-anchor":"middle","font-size":12,fill:"#66573F"},svg);t.textContent=s});
+  $("#winshapes").appendChild(svg);
+})();
+
+/* ---------- moving average explorer ---------- */
+(function(){
+  const y=D.acc,N=y.length,labels=monthLabels(2010,0,N),xt=yearTicks(2010,0,N);let type="sma";
+  function roll(w,t){const out=Array(N).fill(null);
+    for(let i=0;i<N;i++){let s,e;if(t==="cma"){s=i-Math.floor(w/2);e=s+w-1}else{e=i;s=i-w+1}
+      if(s<0||e>=N)continue;let a=0,b=0;for(let k=s;k<=e;k++){const wt=t==="wma"?(k-s+1):1;a+=wt*y[k];b+=wt}out[i]=a/b}return out}
+  const swing=a=>{let s=0,c=0;for(let i=1;i<a.length;i++)if(a[i]!=null&&a[i-1]!=null){s+=Math.abs(a[i]-a[i-1]);c++}return s/c};
+  function draw(){
+    const w=+$("#ma_w").value;$("#ma_wo").textContent=w;const m=roll(w,type);
+    const nm={sma:"Simple trailing",wma:"Weighted trailing",cma:"Centered"}[type]+` (m=${w})`;
+    const ser=[{name:"Original",y,color:C.g,w:2,op:.7},{name:nm,y:m,color:C.o,w:3}];
+    lineChart($("#ma_chart"),{labels,xt,series:ser,aria:"Accessories sales with moving average",h:260});legend($("#ma_lg"),ser);
+    const st=type==="cma"?Math.floor(w/2):w-1,en=type==="cma"?w-1-Math.floor(w/2):0;
+    let msg=`Empty values: <b>${st}</b> at the start, <b>${en}</b> at the end. Average month-to-month swing of the line: <b>${nf(swing(m),1)}</b>.`;
+    if(w===1)msg+=" A window of 1 gives back the original series exactly.";
+    if(w===12)msg+=" A window of 12 covers every calendar month once, so the yearly pattern cancels out.";
+    if(type!=="cma")msg+=" Trailing lines run late: the average turns later than the data.";else msg+=" Centered lines need future values: for analysis only, never for forecasting.";
+    $("#ma_msg").innerHTML=msg;
+    $$("#ma_type button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===type));
+  }
+  $("#ma_w").addEventListener("input",draw);$$("#ma_type button").forEach(b=>b.onclick=()=>{type=b.dataset.t;draw()});draw();
+})();
+
+/* ---------- trend lab ---------- */
+(function(){
+  const y=D.acc,N=y.length,on=new Set([3,12]);
+  const cma=w=>y.map((_,i)=>{const s=i-Math.floor(w/2),e=s+w-1;if(s<0||e>=N)return null;let a=0;for(let k=s;k<=e;k++)a+=y[k];return a/w});
+  const MA={3:cma(3),6:cma(6),12:cma(12),24:cma(24)},from=48;
+  const swing=a=>{let s=0,c=0;for(let i=1;i<a.length;i++)if(a[i]!=null&&a[i-1]!=null){s+=Math.abs(a[i]-a[i-1]);c++}return s/c};
+  const col={3:C.r,6:C.a,12:C.o,24:C.b},dash={3:"",6:"5 3",12:"",24:"2 4"};
+  function draw(){
+    const labels=monthLabels(2014,0,N-from),xt=yearTicks(2014,0,N-from);
+    const ser=[{name:"Original",y:y.slice(from),color:C.g,w:2,op:.7}];[3,6,12,24].filter(w=>on.has(w)).forEach(w=>ser.push({name:`Window ${w}`,y:MA[w].slice(from),color:col[w],dash:dash[w],w:3}));
+    lineChart($("#tr_chart"),{labels,xt,series:ser,aria:"Trend estimates for different windows",h:250});legend($("#tr_lg"),ser);
+    $$("#tr_btns button").forEach(b=>b.setAttribute("aria-pressed",on.has(+b.dataset.w)));
+  }
+  $$("#tr_btns button").forEach(b=>b.onclick=()=>{const w=+b.dataset.w;on.has(w)?on.delete(w):on.add(w);draw()});draw();
+  barChart($("#tr_swing"),{labels:["Window 3","Window 6","Window 12","Window 24"],series:[{name:"swing",v:[3,6,12,24].map(w=>swing(MA[w])),color:C.o}],h:200,vFmt:v=>nf(v,1),aria:"Average month-to-month swing by window"});
+})();
+
+/* ---------- seasonality stepper ---------- */
+(function(){
+  const y=D.acc,N=y.length,T=D.addT,labels=monthLabels(2010,0,N),xt=yearTicks(2010,0,N),MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const det=y.map((v,i)=>T[i]==null?null:v-T[i]);
+  const sum=Array(12).fill(0),cnt=Array(12).fill(0);det.forEach((v,i)=>{if(v!=null){sum[i%12]+=v;cnt[i%12]++}});
+  const avg=sum.map((s,i)=>s/cnt[i]),mean=avg.reduce((a,b)=>a+b)/12,cen=avg.map(v=>v-mean);
+  const S=[
+   {t:"1 · Estimate the trend",m:"A 2×12 centered average of the series gives the trend. It is empty at both ends."},
+   {t:"2 · Subtract it",m:"Subtracting the trend leaves seasonality plus noise."},
+   {t:"3 · Average each calendar month",m:"All Januaries, all Februaries and so on, averaged: the noise cancels and the repeating part stays."},
+   {t:"4 · Centre at zero",m:"Shift the twelve averages so they add up to zero. This keeps the level in the trend."}];
+  const bar=$("#se_steps");let cur=0;
+  S.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.t;b.onclick=()=>{cur=i;draw()};bar.appendChild(b)});
+  function draw(){
+    $$("button",bar).forEach((b,i)=>b.setAttribute("aria-pressed",i===cur));
+    const c=$("#se_chart"),lg=$("#se_lg");lg.innerHTML="";
+    if(cur===0){const s=[{name:"Observed",y,color:C.g,w:2,op:.8},{name:"Trend (2×12)",y:T,color:C.o,w:3}];lineChart(c,{labels,xt,series:s,h:230,aria:"Observed and trend"});legend(lg,s)}
+    else if(cur===1){const s=[{name:"Observed − trend",y:det,color:C.o,w:2.5}];lineChart(c,{labels,xt,series:s,h:230,zero:true,aria:"Detrended series"});legend(lg,s)}
+    else barChart(c,{labels:MN,series:[{name:"effect",v:cur===2?avg:cen,color:C.o}],h:230,aria:cur===2?"Monthly averages":"Centered seasonal effects"});
+    $("#se_msg").innerHTML=S[cur].m+(cur===3?` The twelve effects now sum to <b>${nf(cen.reduce((a,b)=>a+b),1)}</b>.`:"");
+  }
+  draw();
+})();
+
+/* ---------- footfall ---------- */
+(function(){
+  const ff=D.ff,base=Date.UTC(2016,0,1),z0=Math.round((Date.UTC(2018,9,1)-base)/864e5),z1=z0+45;
+  function draw(zoom){
+    const a=zoom?z0:0,b=zoom?z1+1:ff.length,y=ff.slice(a,b),labels=y.map((_,i)=>dLabel(a+i)),xt=[];
+    for(let i=0;i<y.length;i++){const d=new Date(base+(a+i)*864e5);if(zoom?(i%7===0):(d.getUTCMonth()===0&&d.getUTCDate()===1))xt.push({i,label:zoom?d.toLocaleDateString("en-US",{day:"numeric",month:"short",timeZone:"UTC"}):String(d.getUTCFullYear())})}
+    lineChart($("#ff_chart"),{labels,xt,series:[{name:"Footfall",y,color:C.o,w:zoom?2.5:1.4}],h:240,vFmt:v=>nf(v,1),aria:"Daily store footfall"});
+    $("#ff_full").setAttribute("aria-pressed",!zoom);$("#ff_zoom").setAttribute("aria-pressed",zoom);
+  }
+  $("#ff_full").onclick=()=>draw(false);$("#ff_zoom").onclick=()=>draw(true);draw(false);
+  barChart($("#ff_wd"),{labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],series:[{name:"avg",v:D.wd,color:C.o}],h:210,vFmt:v=>nf(v,1),aria:"Average footfall by weekday"});
+})();
+
+/* ---------- 2x12 weights ---------- */
+(function(){
+  const pos=[];for(let p=-6;p<=6;p++)pos.push((p>0?"+":"")+p);
+  const plain=pos.map((_,k)=>k<12?1/12:0),two=pos.map((_,k)=>(k===0||k===12?.5:1)/12);
+  const ser=[{name:"Plain 12-point window",v:plain,color:C.g,hatch:true},{name:"2×12 average (13 points)",v:two,color:C.o}];
+  barChart($("#w_chart"),{labels:pos,series:ser,h:210,labelsOn:false,vFmt:v=>nf(v,4),yFmt:v=>nf(v,2),aria:"Weights of plain 12-point and 2x12 windows"});
+  $("#w_lg").innerHTML='<div class="lg"><span><i class="sw" style="background:repeating-linear-gradient(45deg,#F5DDBD 0 3px,#5B4330 3px 6px)"></i>plain 12-point window (offsets −6 to +5: half a month off-centre)</span><span><i class="sw" style="background:#B8530F"></i>2×12 average (half weight on both ends)</span></div>';
+})();
+
+/* ---------- decomposition explorer ---------- */
+(function(){
+  const y=D.acc,N=y.length,labels=monthLabels(2010,0,N),xt=yearTicks(2010,0,N);let m="add";
+  function draw(){
+    const T=m==="add"?D.addT:D.mulT,S=m==="add"?D.addS:D.mulS,R=m==="add"?D.addR:D.mulR,add=m==="add";
+    const f=v=>add?nf(v,1):nf(v,3);
+    const panels=[["Observed",y,C.b,"#dc_p0",fmt],["Trend",T,C.o,"#dc_p1",fmt],[add?"Seasonality (units, around 0)":"Seasonality (factor, around 1)",S,C.a,"#dc_p2",f],[add?"Residual (units, around 0)":"Residual (ratio, around 1)",R,C.r,"#dc_p3",f]];
+    function eq(i){const o=y[i],t=T[i],s=S[i],r=R[i];
+      $("#dc_eq").textContent=t==null?`${labels[i]}: the centered trend is not available at the edges.`:add?`${labels[i]}:  ${fmt(t)} (trend) + ${nf(s,1)} (season) + ${nf(r,1)} (residual) = ${fmt(o)}`:`${labels[i]}:  ${fmt(t)} (trend) × ${nf(s,3)} (season) × ${nf(r,3)} (residual) = ${fmt(o)}`}
+    panels.forEach((p,k)=>{$(p[3]).innerHTML=`<div class="pl">${p[0]}</div><div class="pc"></div>`;
+      lineChart($(".pc",$(p[3])),{labels,xt,series:[{name:p[0].split(" (")[0],y:p[1],color:p[2],w:2.4}],h:k===0?150:125,noX:k<3,yt:3,vFmt:p[4],zero:add&&k>1,aria:p[0]+" panel",onHover:eq})});
+    $("#dc_eq").textContent="Hover or focus a chart to see how the components combine at a month.";
+    const as=D.addStd,ms=D.mulStd;
+    $("#dc_tab").innerHTML=`<tr><th>Residual spread</th><th class="num">2011–2012</th><th class="num">2017–2018</th></tr>
+      <tr${add?' class="hl"':""}><td>Additive (units)</td><td class="num">${nf(as[0],1)}</td><td class="num">${nf(as[1],1)}</td></tr>
+      <tr${add?"":' class="hl"'}><td>Multiplicative (ratio)</td><td class="num">${nf(ms[0],3)}</td><td class="num">${nf(ms[1],3)}</td></tr>`;
+    $("#dc_msg").textContent=add?"Additive: the seasonal wave has a fixed size, so the swing it cannot explain grows with the level and ends up in the residual (about 40% larger spread late in the series).":"Multiplicative: the seasonal factor scales with the trend, and the residual stays at about 2% of the level in both periods.";
+    $$("#dc_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  }
+  $$("#dc_btns button").forEach(b=>b.onclick=()=>{m=b.dataset.m;draw()});draw();
+})();
+
+/* ---------- log link ---------- */
+(function(){
+  const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  barChart($("#lg_chart"),{labels:MN,series:[{name:"Multiplicative model",v:D.seasMul,color:C.o},{name:"Additive on log, then exp",v:D.seasLog,color:C.b,hatch:true}],h:240,ymin:0,vFmt:v=>nf(v,2),yFmt:v=>nf(v,1),labelsOn:false,aria:"Seasonal factors from two routes"});
+  $("#lg_lg").innerHTML='<div class="lg"><span><i class="sw" style="background:#B8530F"></i>multiplicative model</span><span><i class="sw" style="background:repeating-linear-gradient(45deg,#F5DDBD 0 3px,#5B4330 3px 6px)"></i>additive on log, converted back with exp</span></div>';
+  $("#lg_msg").textContent=`Largest difference between the two sets of twelve factors: ${nf(D.logDiff,4)}.`;
+})();
+
+/* ---------- residual nested ---------- */
+(function(){
+  const N=D.ff.length,labels=Array.from({length:N},(_,i)=>dLabel(i)),xt=[];for(let i=0;i<N;i++){const d=new Date(Date.UTC(2016,0,1)+i*864e5);if(d.getUTCMonth()===0&&d.getUTCDate()===1)xt.push({i,label:String(d.getUTCFullYear())})}
+  const all=D.r1m_full.filter(v=>v!=null),lo=Math.min(...all),hi=Math.max(...all);let m="both";
+  const S={r1:{name:"After weekly only",y:D.r1m_full,color:C.o,w:3},r2:{name:"After weekly + yearly",y:D.r2m_full,color:C.b,w:3,dash:"6 4"}};
+  function draw(){const ser=m==="both"?[S.r1,S.r2]:[S[m]];
+    lineChart($("#rs_chart"),{labels,xt,series:ser,h:230,ymin:lo-1,ymax:hi+1,zero:true,vFmt:v=>nf(v,2),aria:"30-day average of the residual",yFmt:v=>nf(v,0)});legend($("#rs_lg"),ser);
+    $$("#rs_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m))}
+  $$("#rs_btns button").forEach(b=>b.onclick=()=>{m=b.dataset.m;draw()});draw();
+  const sd=D.ffStd,mx=sd[0];
+  $("#rs_std").innerHTML=[["Original",sd[0],C.o],["After weekly decomposition",sd[1],C.a],["After weekly + yearly",sd[2],C.b]].map(r=>`<div class="bar"><span>${r[0]}</span><div class="track"><div class="fill" style="width:${r[1]/mx*100}%;background:${r[2]}"></div></div><span class="v">${nf(r[1],1)}</span></div>`).join("");
+})();
+
+/* ---------- change points ---------- */
+const WL=D.watch,WN=WL.length,WLAB=monthLabels(2009,0,WN),WXT=yearTicks(2009,0,WN);
+(function(){
+  function slope(a,s,w){const xm=(w-1)/2;let ym=0;for(let k=0;k<w;k++)ym+=a[s+k];ym/=w;let n=0,d=0;for(let k=0;k<w;k++){n+=(k-xm)*(a[s+k]-ym);d+=(k-xm)*(k-xm)}return n/d}
+  function score(w){const s=Array(WN).fill(null);for(let i=w;i<=WN-w;i++)s[i]=Math.abs(slope(WL,i,w)-slope(WL,i-w,w));return s}
+  function peaks(s,dist){const v=s.map(x=>x==null?0:x),p=[];for(let i=1;i<v.length-1;i++)if(v[i-1]<v[i]&&v[i]>=v[i+1])p.push(i);
+    const order=p.map((_,k)=>k).sort((a,b)=>v[p[a]]-v[p[b]]),keep=p.map(()=>true);
+    for(let q=order.length-1;q>=0;q--){const j=order[q];if(!keep[j])continue;for(let k=j-1;k>=0&&p[j]-p[k]<dist;k--)keep[k]=false;for(let k=j+1;k<p.length&&p[k]-p[j]<dist;k++)keep[k]=false}
+    return p.filter((_,k)=>keep[k])}
+  function draw(){
+    const w=+$("#cp_w").value;$("#cp_wo").textContent=w;const sc=score(w),pk=peaks(sc,w).sort((a,b)=>sc[b]-sc[a]).slice(0,2).sort((a,b)=>a-b),show=$("#cp_true").checked;
+    const vl=pk.map(i=>({i,color:C.r,dash:"",label:"found"}));if(show)[40,85].forEach(i=>vl.push({i,color:C.b,dash:"3 4",label:"true"}));
+    lineChart($("#cp_chart"),{labels:WLAB,xt:WXT,series:[{name:"Smartwatch sales",y:WL,color:C.o,w:2.4}],vlines:vl,h:230,aria:"Smartwatch sales with detected change points"});
+    lineChart($("#cp_score"),{labels:WLAB,xt:WXT,series:[{name:"Slope change",y:sc,color:C.a,w:2.5}],vlines:pk.map(i=>({i,color:C.r,dash:""})),h:150,vFmt:v=>nf(v,1),aria:"Slope-change score",yt:3,ymin:0});
+    legend($("#cp_lg"),[{name:"Found by window",color:C.r,dash:""},...(show?[{name:"True change",color:C.b,dash:"3 4"}]:[])]);
+    let h="<tr><th>Found at position</th><th>Month</th>"+(show?"<th>Nearest true change</th><th class=\"num\">Off by (months)</th>":"")+"</tr>";
+    pk.forEach(i=>{h+=`<tr><td>${i}</td><td>${WLAB[i]}</td>`;if(show){const t=Math.abs(i-40)<Math.abs(i-85)?40:85;h+=`<td>${t} (${WLAB[t]})</td><td class="num">${i-t>0?"+":""}${i-t}</td>`}h+="</tr>"});
+    $("#cp_tab").innerHTML=h;
+    $("#cp_msg").textContent=w<8?"A short window is jumpy: the score has many small peaks.":w>18?"A long window blurs: changes that are close together merge, and the score is only available far from the ends.":"The score peaks where the slope on the right differs most from the slope on the left.";
+  }
+  $("#cp_w").addEventListener("input",draw);$("#cp_true").onchange=draw;draw();
+})();
+(function(){
+  const box=$("#pe_btns");let cur=1;
+  D.pen.forEach((p,i)=>{const b=document.createElement("button");b.textContent="penalty "+fmt(p[0]);b.onclick=()=>{cur=i;draw()};box.appendChild(b)});
+  function draw(){const br=D.pen[cur][1];
+    lineChart($("#pe_chart"),{labels:WLAB,xt:WXT,series:[{name:"Smartwatch sales",y:WL,color:C.o,w:2.4}],vlines:br.map(i=>({i,color:C.r,dash:"",label:String(i)})),h:220,aria:"Smartwatch sales with Pelt breaks"});
+    $("#pe_msg").innerHTML=br.length?`Penalty <b>${fmt(D.pen[cur][0])}</b>: <b>${br.length}</b> break${br.length>1?"s":""} at positions ${br.join(", ")}.`:`Penalty <b>${fmt(D.pen[cur][0])}</b>: <b>no</b> breaks found.`;
+    $$("button",box).forEach((b,i)=>b.setAttribute("aria-pressed",i===cur))}
+  draw();
+})();
+(function(){
+  const n=40,xm=(n-1)/2,ym=WL.slice(0,n).reduce((a,b)=>a+b)/n;let num=0,den=0;for(let k=0;k<n;k++){num+=(k-xm)*(WL[k]-ym);den+=(k-xm)*(k-xm)}
+  const sl=num/den,ic=ym-sl*xm,line=WL.map((_,i)=>i<=80?ic+sl*i:null);
+  const ex=ic+sl*52,act=(WL[49]+WL[50]+WL[51]+WL[52])/4;
+  const ser=[{name:"Smartwatch sales",y:WL,color:C.g,w:2.2,op:.8},{name:"First-regime trend, extended",y:line,color:C.o,w:3,dash:"7 4"}];
+  lineChart($("#fc_chart"),{labels:WLAB,xt:WXT,series:ser,h:240,vlines:[{i:40,color:C.b,dash:"3 4",label:"change"},{i:52,color:C.r,dash:"",label:"earliest confirmation"}],marks:[{i:52,v:ex,label:"forecast",color:C.o,dy:16},{i:52,v:act,label:"actual",color:C.r,dy:-8}],aria:"Smartwatch sales and extended old trend"});legend($("#fc_lg"),ser);
+  $("#fc_nums").innerHTML=[["Earliest confirmation",WLAB[52],"change happened "+WLAB[40]],["Old trend at month 52",fmt(ex),"phones forecast"],["Actual around month 52",fmt(act),"4-month average"]].map(r=>`<div class="mini"><b>${r[0]}</b><div class="big" style="font-size:22px">${r[1]}</div><span class="sub" style="margin:0">${r[2]}</span></div>`).join("")+`<div class="mini" style="grid-column:1/-1"><b>Gap</b> about ${fmt(Math.abs(act-ex))} smartwatches a month</div>`;
+})();
+
+/* ---------- quizzes ---------- */
+const Q=[
+ {q:"A colleague wants to forecast next month's sales using a centered 3-month moving average. What is the main problem?",o:["The window of 3 is too short to remove any of the random noise in the data","A centered average cannot be computed for any month in the middle","It always lags the data by exactly half the window length","It needs next month's value, which is unknown at forecast time"],a:3,e:"A centered window uses points after the current one, so the average for the newest month needs a future value that has not happened yet. That is why centered averages are for smoothing and analysis only. Window size controls how much noise is removed, and a window of 3 still removes some (A). Middle months are exactly where a centered window is complete (B). The lag of about half a window belongs to the trailing average, whereas the centered one is aligned with the data (C)."},
+ {q:"You estimate the trend of monthly sales with a centered window of 3 months and the line still rises and falls every year. What is the best conclusion?",o:["The trend is periodic by nature, so a yearly wave is the correct shape","Seasonality has leaked into the estimate, so a longer window is needed","The series has no trend at all, because trends are never curved lines","The window is too long, so a shorter one would show the true trend"],a:1,e:"A trend must not repeat. A yearly wave in the estimate means the window is shorter than the cycle, so the seasonal pattern was not averaged out, and a window covering at least 12 months fixes this. A true trend is never periodic (A). Trends can be curved, and a wavy line does not mean there is no trend (C). A shorter window would leave even more seasonality in the estimate (D)."},
+ {q:"You want the seasonal effect of each month in a monthly series. What is the correct order of steps?",o:["Average every month first, then estimate the trend from those averages","Remove the seasonality from the trend, then average the raw series","Subtract the trend, average each calendar month, then center at zero","Fit a polynomial to the seasonality and subtract it from the trend"],a:2,e:"Subtracting the trend leaves seasonality plus noise, averaging each calendar month cancels the noise and keeps the repeating part, and centering at zero keeps the level in the trend. Averaging first mixes trend into every month's average (A). The seasonality is not inside the trend, and the trend must not be periodic (B). A polynomial describes a trend and cannot represent a repeating wave, and the seasonality is not subtracted from the trend (D)."},
+ {q:"A retailer's monthly sales double over ten years, and every year the December peak is about twice as tall as the one before. Which decomposition suits this series?",o:["Multiplicative, because the seasonal swing scales with the level","Additive, because adding keeps the seasonal effect the same size","Additive, because the residual of a growing series is always zero","Neither, because a growing series cannot have a seasonal pattern"],a:0,e:"The peak grows in proportion to the level, so the seasonal effect is a percentage of the trend, and the multiplicative model (or an additive model on the log) represents that. Additive keeps a fixed-size swing, so it would under-fit later years and over-fit early ones (B). Residuals are never exactly zero for real data, and growth has no bearing on that (C). Growing series are common and can be strongly seasonal, as this one is (D)."},
+ {q:"The sliding-window detector flags a change at month 40, but only once month 52 is available. What does this tell you about using it?",o:["It is a good tool to forecast a change in the trend before it really happens","It should only be used on data with no trend or seasonality at all","It always returns the exact month of a change and never needs a window","It explains past changes but cannot warn about a new one starting"],a:3,e:"The detector compares the data before and after a point, so it needs a window of future data and confirms a change only afterwards. That makes it an analysis tool and not an early warning. It cannot forecast a change before it happens (A). It works on series that have a trend, which is exactly what a slope change is about (B). It needs a window on each side of the point and the result depends on the window size and noise (C)."}];
+$$(".quiz").forEach(box=>{
+  const d=Q[+box.dataset.q];let done=false;
+  box.innerHTML=`<div class="ct" style="color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase">Check your understanding</div><div class="q"></div><div class="os"></div><div class="fb" role="status"></div>`;
+  $(".q",box).textContent=d.q;
+  d.o.forEach((t,i)=>{const b=document.createElement("button");b.className="opt";b.type="button";b.innerHTML="<b>"+"ABCD"[i]+".</b> ";b.appendChild(document.createTextNode(t));
+    b.onclick=()=>{const fb=$(".fb",box);if(i===d.a){done=true;b.classList.add("right");$$(".opt",box).forEach(x=>x.disabled=true);fb.innerHTML="<b>Correct.</b> ";fb.appendChild(document.createTextNode(d.e))}else{b.classList.add("wrong");b.disabled=true;fb.innerHTML="<b>Not quite — try another option.</b>"}fb.classList.add("show")};
+    $(".os",box).appendChild(b)});
+});
+
+})();
+</script>
+</body>
+</html>
