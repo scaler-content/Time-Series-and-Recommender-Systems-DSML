@@ -4,7 +4,7 @@ name: Deploy All Post Reads to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - 'post-read-*'
 
   workflow_dispatch:
 
@@ -15,53 +15,61 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Main Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Fetch All Branches
-        run: git fetch origin
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
 
       - name: Prepare Deployment Directory
         run: mkdir -p site
 
-      - name: Collect All 12 Post Reads
+      - name: Collect Available Post Reads
         run: |
           for i in {1..12}
           do
             BRANCH="post-read-$i"
 
-            echo "Collecting $BRANCH"
+            if git show-ref --verify --quiet \
+              "refs/remotes/origin/$BRANCH"; then
 
-            mkdir -p "site/$BRANCH"
+              echo "Collecting $BRANCH"
 
-            git archive "origin/$BRANCH" \
-              | tar -x -C "site/$BRANCH"
+              mkdir -p "site/$BRANCH"
+
+              git archive "origin/$BRANCH" \
+                | tar -x -C "site/$BRANCH"
+
+            else
+              echo "Skipping $BRANCH - branch not created yet"
+            fi
           done
 
-      - name: Configure GitHub Pages
+      - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages Artifact
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./site
 
   deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    needs: build
 
     steps:
       - name: Deploy to GitHub Pages
