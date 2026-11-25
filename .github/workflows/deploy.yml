@@ -1,81 +1,39 @@
 
-name: Deploy All Post Reads to GitHub Pages
+name: Deploy Multiple Post Reads
 
 on:
   push:
     branches:
+      - main
       - 'post-read-*'
 
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: github-pages
-  cancel-in-progress: false
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Fetch All Branches
-        run: |
-          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
-
-      - name: Prepare Deployment Directory
-        run: mkdir -p site
-      
-      - name: Collect Available Post Reads
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          for i in {1..12}
-          do
-            BRANCH="post-read-$i"
-
-            COMMIT=$(git rev-parse --verify \
-              "refs/remotes/origin/$BRANCH^{commit}" 2>/dev/null || true)
-
-            if [ -n "$COMMIT" ]; then
-              echo "Collecting $BRANCH ($COMMIT)"
-
-              mkdir -p "site/$BRANCH"
-
-              git archive "$COMMIT" | tar -x -C "site/$BRANCH"
-
-            else
-              echo "Skipping $BRANCH - branch does not exist"
-            fi
-          done
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: write
 
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+
+      # Deploy main → root
+      - name: Deploy main
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          keep_files: true
+
+      # Deploy individual post-read branches
+      - name: Deploy Post Reads
+        if: startsWith(github.ref, 'refs/heads/post-read-')
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          destination_dir: ${{ github.ref_name }}
+          keep_files: true
