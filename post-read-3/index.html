@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TS & RS: Beat the Baseline</title>
+<style>
+
+:root{
+  --bg:#F1E8D6; --paper:#FAF4E6; --card:#FFFBF1; --sand:#E7DBC2; --line:#D6C7A9;
+  --ink:#33291E; --muted:#66573F; --brown:#5B4330; --deep:#3B2A1C;
+  --orange:#B8530F; --orange-ink:#9C4509; --orange-btn:#A84A0B; --orange-2:#D9792B; --amber:#E3A94B; --tint:#F5DDBD; --tint-2:#FBEBD3; --rust:#8A3410;
+  --radius:14px; --shadow:0 1px 2px rgba(59,42,28,.08),0 6px 18px rgba(59,42,28,.06);
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7}
+a{color:var(--orange-ink)}
+:focus-visible{outline:3px solid var(--orange-2);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top nav */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,244,230,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.topbar nav{max-width:1080px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:thin}
+.topbar a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px}
+.topbar a:hover{background:var(--tint-2);color:var(--orange-ink)}
+.topbar a.active{background:var(--orange-btn);color:#fff}
+.progress{height:3px;background:transparent}
+.progress i{display:block;height:100%;width:0;background:var(--orange-2)}
+
+/* hero */
+.hero{background:var(--deep);color:#F3E7D0;padding:72px 20px 64px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,121,43,.35),rgba(217,121,43,0) 70%)}
+.hero .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.hero h1{font-family:var(--serif);font-size:clamp(32px,5.4vw,54px);line-height:1.12;margin:12px 0 18px;font-weight:700;color:#FFF6E4}
+.hero p{font-size:19px;max-width:700px;color:#E6D6B8;margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid rgba(243,231,208,.35);border-radius:999px;padding:4px 14px;font-size:14px;color:#F3E7D0}
+
+/* layout */
+main{max-width:860px;margin:0 auto;padding:12px 20px 60px}
+section{padding-top:48px}
+section>h2{font-family:var(--serif);font-size:clamp(26px,3.6vw,34px);line-height:1.2;margin:0 0 6px;color:var(--deep)}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-ink)}
+h3{font-family:var(--serif);font-size:22px;margin:34px 0 8px;color:var(--deep)}
+h4{margin:20px 0 6px;font-size:17px;color:var(--brown)}
+p{margin:0 0 14px}
+ul,ol{padding-left:22px;margin:0 0 14px}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sand);padding:1px 6px;border-radius:5px}
+pre{background:#2F2217;color:#F2E5CC;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:14px;line-height:1.55;margin:10px 0 14px}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+pre.out{background:var(--sand);color:var(--ink);border-left:4px solid var(--orange-2);border-radius:6px;margin-top:-6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:18px 0}
+.card>h4:first-child,.card>.ct{margin-top:0}
+.ct{font-weight:700;color:var(--deep);font-size:16px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:12px}
+.viz{border-top:5px solid var(--orange-2)}
+.viz .tag{display:inline-block;background:var(--tint);color:var(--rust);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 10px;border-radius:999px;margin-bottom:8px}
+.callout{background:var(--tint-2);border-left:5px solid var(--orange);border-radius:8px;padding:14px 18px;margin:18px 0}
+.callout b.h{display:block;color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.callout.note{background:var(--sand);border-left-color:var(--brown)}
+.callout.note b.h{color:var(--brown)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}body{font-size:16px}}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mini b{display:block;color:var(--deep);margin-bottom:2px}
+.mini .big{font-family:var(--serif);font-size:28px;color:var(--orange-ink);line-height:1.1}
+
+/* controls */
+button,.btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:999px;border:1.5px solid var(--orange-btn);background:var(--card);color:var(--orange-ink);padding:6px 16px}
+button:hover{background:var(--tint-2)}
+button[aria-pressed="true"],button.on{background:var(--orange-btn);color:#fff}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+label{font-size:14px;font-weight:600;color:var(--brown)}
+input[type=range]{width:100%;accent-color:var(--orange-btn)}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;margin-bottom:12px}
+.ctrl output{font-family:var(--mono);color:var(--orange-ink);font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.chk input{accent-color:var(--orange-btn);width:18px;height:18px}
+
+/* tables */
+.tw{overflow-x:auto;margin:10px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--sand);color:var(--deep);font-size:14px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--tint-2)}
+
+/* bars */
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bar .track{background:var(--sand);border-radius:6px;height:26px;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px;transition:width .35s}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+@media(max-width:560px){.bar{grid-template-columns:1fr;gap:2px}.bar .v{text-align:left}}
+
+/* calendar grid */
+.cal{display:grid;grid-template-columns:42px repeat(12,minmax(0,1fr));gap:3px;font-size:11px;max-width:620px}
+.cal .hd,.cal .yr{color:var(--muted);font-weight:700;text-align:center;line-height:20px}
+.cal .yr{text-align:right;padding-right:4px}
+.cal .c{height:20px;border-radius:4px;background:var(--sand);border:1px solid var(--line);text-align:center;line-height:17px;color:var(--brown);font-size:11px}
+.cal .c.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange);color:var(--rust)}
+.cal .c.absent{background:transparent;border:1.5px dashed var(--rust);color:var(--rust);font-weight:700}
+.cal .c.blank{visibility:hidden}
+.cal .cnt{height:46px;display:flex;align-items:flex-end;justify-content:center}
+.cal .cnt i{display:block;width:100%;background:var(--orange);border-radius:3px 3px 0 0;position:relative}
+.cal .cnt i.top{background:var(--rust)}
+.cal .cn{text-align:center;font-weight:700;color:var(--deep);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:10px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:14px;border-radius:3px;background:var(--sand);border:1px solid var(--line)}
+.sw.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.sw.absent{background:transparent;border:1.5px dashed var(--rust)}
+
+svg text{font-family:var(--sans)}
+svg{max-width:100%;height:auto;display:block}
+.mrow{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+.mrow div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:8px 0;font-size:13px;font-weight:700;background:var(--sand);color:var(--brown)}
+.mrow .dip{background:var(--card);border:2px dashed var(--brown)}
+.mrow .peak{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+
+/* steps */
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.steps button{border-radius:10px}
+.stepbody{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+
+/* quiz */
+.quiz{border-left:6px solid var(--orange)}
+.quiz .q{font-weight:600;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;margin:6px 0;font-weight:500}
+.opt:hover{border-color:var(--orange-2);background:var(--tint-2)}
+.opt.right{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+.opt.wrong{border:2px dashed var(--rust);background:var(--paper)}
+.quiz .fb{display:none;margin-top:10px;background:var(--sand);border-radius:8px;padding:10px 14px;font-size:15px}
+.quiz .fb.show{display:block}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:0}
+summary{cursor:pointer;padding:12px 18px;font-weight:700;color:var(--deep);list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--orange-ink);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details .dbody{padding:0 18px 14px}
+details pre{margin-top:0}
+
+footer{background:var(--deep);color:#D9C7A4;text-align:center;padding:28px 20px;font-size:14px}
+
+.chw{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--deep);color:#F3E7D0;font-size:12.5px;line-height:1.45;padding:6px 10px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+.eq{font-family:var(--serif);font-size:19px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0;overflow-x:auto;text-align:center}
+.eq small{font-size:14px;color:var(--muted);font-family:var(--sans)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:6px 0 4px}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.faq{border-left:5px solid var(--amber);background:var(--card);border-radius:8px;padding:12px 16px;margin:16px 0}
+.faq b{color:var(--rust)}
+.cal .c.test{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.cal .c.tr{background:var(--sand)}
+.chips2{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips2 button{font-size:13px;padding:4px 12px}
+.chips2 button[aria-pressed="true"]{background:var(--orange-btn);color:#fff}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0}
+.kpi div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.kpi b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi span{font-family:var(--serif);font-size:24px;color:var(--orange-ink)}
+input[type=number]{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+tr.best td{background:var(--tint)}
+</style>
+</head>
+<body>
+<div class="topbar" role="banner">
+  <nav aria-label="Sections">
+    <a href="#open">The 9% claim</a><a href="#metrics">Metrics</a><a href="#splits">Honest splits</a><a href="#simple">Simple forecasts</a><a href="#ma">Moving average</a><a href="#ses">Exponential smoothing</a><a href="#bar">The baseline bar</a><a href="#mase">MASE &amp; sMAPE</a><a href="#recap">Recap</a>
+  </nav>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Time Series &amp; Recommender System · Class 3</div>
+    <h1>Beat the Baseline - Metrics, Honest Splits and the Simple Forecasts That Win</h1>
+    <p>How to measure a forecast fairly, split time series data without cheating, and see how far the simplest forecasting methods go, because every clever model must beat them.</p>
+    <div class="chips"><span class="chip">Case: ChillPoint ice cream</span><span class="chip">120 months · Jan 2009 – Dec 2018</span><span class="chip">Python · scikit-learn · statsmodels</span></div>
+  </div>
+</header>
+
+<main>
+<section id="intro" style="padding-top:36px">
+  <div class="callout note"><b class="h">About the data</b>The class uses <code>chillpoint_sales.csv</code>: two clean monthly series with no gaps or anomalies. <code>IceCream</code> is tubs sold per month across all parlours (the main series); <code>HotChocolate</code> is cups sold per month at one kiosk (used in the last section). The data is simulated for teaching; the numbers are not real ChillPoint figures. Every chart and score on this page is computed in your browser from those 120 months.</div>
+</section>
+
+<!-- COLD OPEN -->
+<section id="open">
+  <div class="kicker">1 · Cold open</div>
+  <h2>The vendor with the 9% claim</h2>
+  <p>You are the data scientist at ChillPoint, a chain of ice cream parlours. Every month ChillPoint orders milk, cones and freezer space weeks in advance, so it needs a forecast of tubs sold. A software vendor walks in: <b>"Our AI forecasting tool has a 9% error. It costs a lot, but it is clearly excellent."</b> The manager turns to you: "Is 9% good?"</p>
+  <p>You cannot answer yet, and that is the point of this class. A number like 9% means nothing until it is compared with something. Look at the history first.</p>
+  <div class="card viz"><span class="tag">Visualizer · the series</span>
+    <div class="ct">ChillPoint ice cream: tubs sold per month</div>
+    <div id="o_chart"></div>
+    <div class="ct" style="margin-top:12px">Last three years, side by side</div>
+    <div class="tw"><table id="o_tab"></table></div>
+    <p class="sub" style="margin:0">The series climbs steadily and has a strong yearly cycle with peaks in June and July and lows in winter: the trend and seasonality from Class 2. Any forecasting rule worth paying for has to do better than an obvious rule that uses only these facts.</p>
+  </div>
+  <div class="faq"><b>How would you guess next July's sales with no vendor and no software?</b><br>A natural answer is "about what we sold last July, plus a little for growth". Hold on to that sentence. By the end of the class it becomes a forecast we can score, and the vendor's 9% is compared with it.</div>
+  <h3>The plan</h3>
+  <div class="grid2">
+    <div class="mini"><b>1 · Choose the yardstick</b>MAE, RMSE and MAPE.</div>
+    <div class="mini"><b>2 · Build an honest test</b>Split by time and never by shuffling.</div>
+    <div class="mini"><b>3 · Score the simple forecasts</b>Mean, median, naive, seasonal naive, drift, moving average and simple exponential smoothing.</div>
+    <div class="mini"><b>4 · Use them as the bar</b>Every model must beat them; meet two new metrics for awkward data.</div>
+  </div>
+</section>
+
+<!-- METRICS -->
+<section id="metrics">
+  <div class="kicker">2 · Yardsticks</div>
+  <h2>Forecast metrics: MAE, RMSE and MAPE</h2>
+  <p>A forecast error is the actual value minus the forecast: <b>e<sub>t</sub> = y<sub>t</sub> − ŷ<sub>t</sub></b>. To judge a whole forecast, the errors are combined into one number.</p>
+  <div class="tw"><table>
+    <tr><th>Metric</th><th>Formula</th><th>Unit</th><th>Best used when</th></tr>
+    <tr><td><b>MAE</b></td><td>(1/N) Σ |e<sub>t</sub>|</td><td>Same as the data</td><td>You want the typical size of a miss, in tubs</td></tr>
+    <tr><td><b>RMSE</b></td><td>√( (1/N) Σ e<sub>t</sub>² )</td><td>Same as the data</td><td>Big misses hurt much more than small ones</td></tr>
+    <tr><td><b>MAPE</b></td><td>(1/N) Σ |e<sub>t</sub> / y<sub>t</sub>|</td><td>Percent</td><td>You need a scale-free number for management, such as "within 5%"</td></tr>
+  </table></div>
+  <p>MAE is the average distance between where the dart landed and the bullseye. RMSE squares each distance first, so one wild throw counts much more than several small misses.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · metric lab</span>
+    <div class="ct">Four months, actual = 100 each</div>
+    <div class="sub">Set the four forecasts yourself, or load one of the two from the class. Forecast A makes four small misses of 10; forecast B makes three perfect forecasts and one miss of 40.</div>
+    <div class="btnrow"><button id="ml_a">Load A: four small misses</button><button id="ml_b">Load B: one big miss</button></div>
+    <div class="ctrl" id="ml_sl"></div>
+    <div class="kpi" id="ml_kpi" aria-live="polite"></div>
+    <div id="ml_chart"></div>
+    <p id="ml_msg" class="sub" style="margin:0"></p>
+  </div>
+  <p>MAE gives both preset forecasts a score of 10 and cannot tell them apart. RMSE gives 10 to A and 20 to B, because squaring makes the single miss of 40 count much more. If a big miss means an empty freezer on a hot day, RMSE is the metric that reflects the cost.</p>
+
+  <h4>Why MAPE is scale-free</h4>
+  <div class="card viz"><span class="tag">Visualizer · same miss, different size</span>
+    <div class="ctrl"><div><label for="mp_a">Actual value: <output id="mp_ao"></output> (forecast is 10 higher)</label><input id="mp_a" type="range" min="10" max="2000" step="10" value="100"></div></div>
+    <div id="mp_out" aria-live="polite"></div>
+  </div>
+  <p>A miss of 10 is 10% of 100 but only 1% of 1,000. MAPE makes errors comparable across series of different sizes, which is why management likes it, and it is the metric behind requirements such as "not more than 5%". Its weak spot: if an actual value is zero, the division is undefined (see the last section).</p>
+<pre><code>def performance(actual, predicted, show=True):
+    scores = {"MAE": mae(actual, predicted),
+              "RMSE": mse(actual, predicted) ** 0.5,
+              "MAPE %": mape(actual, predicted) * 100}
+    ...
+    return scores</code></pre>
+  <p>One helper scores every method, so each is judged the same way. On forecast B it returns MAE 10.0, RMSE 20.0 and MAPE 10.00% (the miss of 40 spread over four rows of 100).</p>
+  <div class="faq"><b>Which metric would you show the CFO, and which would you use to choose between two models?</b><br>MAPE is easy for a CFO to read as a percentage. For a model comparison, use the metric that matches the business cost, and report more than one.</div>
+  <details><summary>Practice · When does RMSE disagree with MAE?</summary><div class="dbody">
+    <p>Ask an AI assistant for two forecasts of the same 12 actual values where forecast 1 has the lower MAE and forecast 2 the lower RMSE. Paste the arrays into a cell, compute both metrics with <code>performance()</code>, and check that the ranking really flips; if not, tell the AI and ask for a correction. Then sort a small table by each metric.</p>
+    <p style="margin:0"><b>Reflect:</b> for ChillPoint, is a miss of 400 tubs in one month worse than four misses of 100? What does that say about the metric to choose?</p></div></details>
+  <div class="card quiz" data-q="0"></div>
+</section>
+
+<!-- SPLITS -->
+<section id="splits">
+  <div class="kicker">3 · Honest tests</div>
+  <h2>Honest splits for time series</h2>
+  <p>A fair test means judging a forecast on data it never saw. For tabular problems that is <code>train_test_split</code>, which shuffles rows. For a time series, <b>shuffling is cheating</b>: if July 2017 lands in the test set and July 2018 in the training set, the model has already seen what happened after the month it is asked to predict.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · random vs time split</span>
+    <div class="sub">All 120 months, one row per year. The test set holds 12 months either way. The random split uses the class's seed (<code>default_rng(0)</code>).</div>
+    <div class="btnrow" id="sp_btns" role="group" aria-label="Split type"><button data-m="rand" aria-pressed="true">Random shuffle (leaks the future)</button><button data-m="time" aria-pressed="false">Split by time (honest)</button></div>
+    <div id="sp_grid" class="cal" role="img" aria-label="Calendar showing which months are in the test set"></div>
+    <div class="legend"><span><i class="sw"></i>train</span><span><i class="sw empty"></i>test</span></div>
+    <div class="tw"><table id="sp_tab"></table></div>
+    <p id="sp_msg" class="sub" style="margin:0" aria-live="polite"></p>
+  </div>
+<pre><code># Split 1: random shuffle, 108 rows to train and 12 to test
+order = np.random.default_rng(0).permutation(len(ice))
+train_idx, test_idx = order[:108], order[108:]
+# Split 2: honest time split
+rf2 = RandomForestRegressor(n_estimators=200, random_state=0).fit(X.iloc[:108], ice.iloc[:108])</code></pre>
+  <p>The model is a random forest learning from the month number 𝑡 and the calendar month, easy to fool. The same model on the same data looks clearly better under the random split: MAPE 3.8% with the shuffle against 5.8% on the honest split. With shuffling every test month sits between training months, so the forest just recalls its neighbours. In reality we must predict a year after everything we know, and a random forest cannot continue a rising trend beyond the largest 𝑡 it has seen. The random split hid that weakness.</p>
+
+  <h3>Split by time</h3>
+  <p>Keep the last 12 months for the test set so the test is exactly the forecasting job of a real year: nine years (Jan 2009 – Dec 2017, 108 months) to train, the final year (Jan – Dec 2018, 12 months) to test. There is only one column of data, so no separate <code>y_train</code>: the forecast is built from the past values of the series.</p>
+<pre><code>train = ice.loc[:"2017-12-01"]
+test  = ice.loc["2018-01-01":]</code></pre>
+
+  <h3>More than one test: walking forward</h3>
+  <p>One test year can be lucky or unlucky. <code>TimeSeriesSplit</code> makes several train/test pairs, and in each the test always comes after the training data. Each fold gives a score, and the average is a more stable verdict.</p>
+  <div class="card viz"><span class="tag">Visualizer · walk-forward folds</span>
+    <div id="wf"></div>
+    <div class="tw"><table id="wf_tab"></table></div>
+    <p class="sub" style="margin:0">Shuffled K-fold has the same leakage problem as the shuffled split, so avoid it for time series. In this class the single last-year test is used for simplicity.</p>
+  </div>
+  <div class="card quiz" data-q="1"></div>
+</section>
+
+<!-- SIMPLE -->
+<section id="simple">
+  <div class="kicker">4 · Baselines</div>
+  <h2>Simple forecasts: mean, median, naive, seasonal naive and drift</h2>
+  <p>Four rules need no model at all. Each forecasts all 12 test months from the training data only. Switch them on and off, and watch the scoreboard.</p>
+  <div class="card viz"><span class="tag">Visualizer · forecast explorer</span>
+    <div class="sub">History 2016–2017, actual 2018 and every forecast made at the end of 2017. Hover a month for values.</div>
+    <div class="chips2" id="fx_btns" role="group" aria-label="Forecasts to show"></div>
+    <div id="fx_chart"></div><div id="fx_lg"></div>
+    <div class="tw"><table id="fx_tab"></table></div>
+    <p class="sub" style="margin:0">Scores on the 2018 test year. Highlighted rows are the forecasts currently drawn.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="mini"><b>1 · Mean and median</b>Predict the average (or median) of all history for every future month. Flat: the next point barely changes the mean, so the forecast responds to nothing. The mean forecast is a single number, about <b>4,707</b> tubs, for every month; it ignores the trend and the cycle and misses badly at the summer peak. A baseline to beat, not a useful forecast.</div>
+    <div class="mini"><b>2 · Naive</b>Forecast every future month with the last observed value. Here that is December 2017, a low month, so summer is badly under-forecast. The value is made once from the training data and used for all 12 months. Re-forecasting every month would change the answer for all later months: a client told in March that June will be X, and in April that it will be Y, loses trust. Only a benchmark.</div>
+    <div class="mini"><b>3 · Seasonal naive</b>Use the same month last year: the forecast for July 2018 is the actual of July 2017. This is the sentence kept from the cold open. It respects the cycle and copies a full year of shape, but cannot add growth, so it tends to sit below the actuals when the series is rising.</div>
+    <div class="mini"><b>4 · Drift</b>Draw a straight line between the first and last training point and extend it. The slope is the average change per month (<b>19.9 tubs per month</b> here). It adds the growth that seasonal naive misses, but starts from low-season December and has no cycle.</div>
+  </div>
+  <div class="eq">ŷ<sub>T+h</sub> = y<sub>T</sub> + h · (y<sub>T</sub> − y<sub>1</sub>) / (T − 1)</div>
+<pre><code>forecasts["Seasonal naive"] = pd.Series(train.iloc[-12:].values, index=test.index)
+slope = (train.iloc[-1] - train.iloc[0]) / (T - 1)
+forecasts["Drift"] = pd.Series(train.iloc[-1] + slope * h, index=test.index)</code></pre>
+
+  <h4>Drift is fragile</h4>
+  <div class="card viz"><span class="tag">Visualizer · move drift's anchor</span>
+    <div class="btnrow" id="dr_btns" role="group" aria-label="Drift end point"><button data-e="0" aria-pressed="true">Drift ending Dec 2017</button><button data-e="1" aria-pressed="false">Drift ending Nov 2017</button></div>
+    <div id="dr_out" aria-live="polite"></div>
+    <p class="sub" style="margin:6px 0 0">Changing the end point by a single month moves the MAPE from 21.2% to 19.1%, because the line is anchored to one point. The error stays high either way (about 20%); only seasonal naive follows the shape of the year.</p>
+  </div>
+  <div class="faq"><b>Which rule would you combine to get both the shape and the growth?</b><br>Seasonal naive plus drift: the cycle of last year, lifted by the yearly growth. A short step toward the smoothing models that come next.</div>
+  <div class="faq"><b>Why study rules this simple?</b><br>Sometimes one of them is the best method available, and in many cases they are the benchmark. A new model is only worth considering if it beats the simple alternatives.</div>
+  <div class="card quiz" data-q="2"></div>
+</section>
+
+<!-- MA -->
+<section id="ma">
+  <div class="kicker">5 · Moving average</div>
+  <h2>The moving average forecast and its flat-line problem</h2>
+  <p>In Class 2 the moving average was a smoothing tool. As a forecast, we average the last 𝑚 values for the next month. For the second future month we average the last 𝑚 values again, now <b>including the first forecast</b>, and so on: the forecast becomes part of the history.</p>
+<pre><code>def ma_forecast(history, window, steps, index):
+    values = list(history.values)
+    out = []
+    for _ in range(steps):
+        nxt = np.mean(values[-window:])
+        out.append(nxt)
+        values.append(nxt)             # the forecast becomes part of the history
+    return pd.Series(out, index=index)</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · forecasts feeding forecasts</span>
+    <div class="ctrl"><div><label for="ma_w">Window 𝑚: <output id="ma_wo"></output></label><input id="ma_w" type="range" min="1" max="24" value="3"></div></div>
+    <div id="ma_chart"></div><div id="ma_lg"></div>
+    <div class="tw" id="ma_tabw"><table id="ma_tab"></table></div>
+    <p id="ma_msg" class="sub" style="margin:0" aria-live="polite"></p>
+  </div>
+  <p>Both the window of 3 and the window of 12 flatten out within a few steps, and the first values already ignore the shape of the year. The window of 3 settles near the level of the last quarter of 2017, a low-season level. The window of 12 averages the whole last year, so it lands at the yearly level, which is better, but still a flat line without any seasonal shape. The reason is the recursion: from the second forecast onwards the window is filled with our own forecasts, so it averages averages.</p>
+  <p>The method also uses very little of the nine years of history: only the last 𝑚 points matter. We want to keep a memory of the whole series and still give the most weight to recent months. That is the next idea.</p>
+</section>
+
+<!-- SES -->
+<section id="ses">
+  <div class="kicker">6 · Exponential smoothing</div>
+  <h2>Simple exponential smoothing</h2>
+  <h3>Remember everything, weigh the recent most</h3>
+  <p>Simple exponential smoothing (SES) gives the newest value a weight 𝛼 and older values smaller and smaller weights that decay exponentially. 𝛼 is the smoothing level, between 0 and 1.</p>
+  <div class="eq">ŷ<sub>t+1</sub> = α·y<sub>t</sub> + (1 − α)·ŷ<sub>t</sub> <br><small>weights: α, α(1−α), α(1−α)², …</small></div>
+
+  <div class="card viz"><span class="tag">Visualizer · SES lab</span>
+    <div class="ctrl"><div><label for="se_a">Smoothing level α: <output id="se_ao"></output></label><input id="se_a" type="range" min="0.01" max="1" step="0.01" value="0.3"></div></div>
+    <div class="btnrow"><button id="se_p04">α = 0.04 (12×12 rule of thumb)</button><button id="se_p3">α = 0.3 (class)</button><button id="se_p9">α = 0.9</button><button id="se_p1">α = 1 (statsmodels estimate)</button></div>
+    <div class="ct">Weight given to each past month</div>
+    <div id="se_w"></div>
+    <div class="ct" style="margin-top:10px">Forecasts of 2018</div>
+    <div id="se_chart"></div><div id="se_lg"></div>
+    <div class="kpi" id="se_kpi" aria-live="polite"></div>
+    <p id="se_msg" class="sub" style="margin:0"></p>
+  </div>
+  <p>A high 𝛼 puts nearly all the weight on the last month, so the forecast reacts quickly and forgets history. A low 𝛼 spreads the weight over many months, so the forecast is steady and slow to react. The statsmodels <code>SimpleExpSmoothing</code> can be checked by writing the update loop yourself:</p>
+<pre><code>level = train.iloc[0]
+for y in train:
+    level = alpha * y + (1 - alpha) * level
+# our loop: 5327.2826     statsmodels 1st forecast: 5327.2826</code></pre>
+  <p id="se_chk" class="sub"></p>
+  <p>The numbers are identical, so there is no mystery in the library: SES is a running weighted average with one number to choose.</p>
+
+  <h3>Multi-step versus one-step</h3>
+  <div class="grid2">
+    <div class="mini"><b>12 steps in one go</b>For horizons beyond the first step the model has no next actual value, so it keeps reusing its own latest level: <b>a single repeated value</b>. SES has no trend and no seasonality. MAPE 15.4%.</div>
+    <div class="mini"><b>One step at a time</b>Each month, after the actual arrives, the level is updated and only the next month is forecast. With α=0.3, MAPE 15.2%: barely better, because the level reacts too slowly to a strongly seasonal series.</div>
+  </div>
+  <p style="margin-top:14px">The two scores answer different business questions. ChillPoint orders weeks ahead, so the honest score for it is the <b>multi-step</b> one.</p>
+<pre><code>def ses_one_step(history, future, alpha):
+    level = history.iloc[0]
+    for y in history:
+        level = alpha * y + (1 - alpha) * level
+    out = []
+    for y in future:
+        out.append(level)                          # forecast for this month, made one month earlier
+        level = alpha * y + (1 - alpha) * level    # now the actual arrives
+    return pd.Series(out, index=future.index)</code></pre>
+
+  <h3>Choosing α</h3>
+  <div class="card viz"><span class="tag">Visualizer · α grid</span>
+    <div class="sub">One-step MAPE on the 2018 test year for five values of α (computed from the training data's final level).</div>
+    <div id="se_grid"></div>
+    <p class="sub" style="margin:6px 0 0"></p>
+  </div>
+  <p>A rule of thumb for monthly data is a starting value of 12×12, about 0.04. Here the best α is much higher: the cycle makes the series swing from month to month, so the level has to chase the data. The estimate from statsmodels on the training data is <b>1.0</b> to three decimal places, and with α=1 the update becomes ŷ<sub>t+1</sub> = y<sub>t</sub>, the <b>naive forecast</b>. That is a warning sign: SES could not find any better use of the history, since it has no seasonality. Even at α=0.9 the one-step MAPE is about 9.8%, still behind the 6.3% of seasonal naive. The estimate uses the training data only, which is the honest way; picking α by looking at the test score would be a quiet leak.</p>
+  <details><summary>Practice · Pick α without cheating</summary><div class="dbody">
+    <p>Ask an AI assistant for a function that picks the SES smoothing level by one-step-ahead validation on the last 12 months of <code>train</code>, then refits on all of <code>train</code>, without touching any test data. Read the code and confirm it never uses <code>test</code>, run it, and compare the chosen α with the statsmodels estimate. Forecast 2018 with it using <code>ses_one_step</code> and add the score to the results table.</p>
+    <p style="margin:0"><b>Reflect:</b> why does tuning on the test year make the score look better than it will be on the real future?</p></div></details>
+  <div class="card quiz" data-q="3"></div>
+</section>
+
+<!-- BAR -->
+<section id="bar">
+  <div class="kicker">7 · The bar</div>
+  <h2>Baselines as the bar every model must beat</h2>
+  <p>Every score from the class in one place. Drag the vendor's claim to see where it lands.</p>
+  <div class="card viz"><span class="tag">Visualizer · the scoreboard</span>
+    <div class="btnrow" id="bd_btns" role="group" aria-label="Metric"><button data-k="MAPE" aria-pressed="true">MAPE %</button><button data-k="MAE" aria-pressed="false">MAE (tubs)</button><button data-k="RMSE" aria-pressed="false">RMSE (tubs)</button></div>
+    <div class="ctrl" id="bd_c"><div><label for="bd_v">Vendor claim (MAPE %): <output id="bd_vo"></output></label><input id="bd_v" type="range" min="1" max="25" step="0.5" value="9"></div></div>
+    <div id="bd_chart"></div>
+    <p id="bd_msg" class="sub" style="margin:0" aria-live="polite"></p>
+  </div>
+  <p>Nine entries and no model at all, and the best 12-step forecast is <b>seasonal naive with a MAPE of 6.3%</b>. The vendor's 9% looks impressive until it sits next to a rule that copies last year. Now the manager's question has an answer: a 9% error is not a reason to pay, since a one-line baseline does better, and the vendor must show a result below it on the same test year. (The "SES (1-step)" row is not comparable: it is given a fresh actual every month, so it answers a different question.)</p>
+  <div class="callout"><b class="h">Important</b>A baseline is the bar. If a complex model does not clearly beat the best simple one, it is not worth its cost, and a model that cannot beat seasonal naive on seasonal data has learned nothing about seasonality.</div>
+</section>
+
+<!-- MASE -->
+<section id="mase">
+  <div class="kicker">8 · Awkward data</div>
+  <h2>MASE and sMAPE when actuals are near zero</h2>
+  <p>MAPE divides by the actual value, which causes two problems: it explodes when actuals are small and it is undefined at exactly zero. ChillPoint's hot chocolate kiosk shows this clearly.</p>
+  <div class="card viz"><span class="tag">Visualizer · the hot chocolate kiosk</span>
+    <div id="hc_chart"></div><div id="hc_lg"></div>
+    <p id="hc_msg" class="sub" style="margin:6px 0 0"></p>
+  </div>
+  <p>With seasonal naive and a 12-month moving average as the two forecasts, the test-year actuals are <code>[25 27 22 9 6 0 0 1 5 12 20 29]</code>. When the actual is 0, MAPE divides by zero; scikit-learn avoids a crash by swapping in a tiny number, so the moving-average forecast, which is not exactly zero in those months, gets a MAPE of about 9e17 percent: a number to never show a manager. Seasonal naive matches the zeros exactly, but its MAPE (43.4%) is still inflated by the months with 1 and 5 cups. MAE tells the honest story in plain units: a typical miss of a few cups.</p>
+
+  <h3>Two alternatives</h3>
+  <div class="grid2">
+    <div class="mini"><b>sMAPE</b>Symmetric MAPE divides the miss by the average size of the actual and the forecast, so a single zero actual no longer breaks it.
+      <div class="eq" style="font-size:16px;margin:8px 0 0">sMAPE = (100/N) Σ 2|y<sub>t</sub> − ŷ<sub>t</sub>| / (|y<sub>t</sub>| + |ŷ<sub>t</sub>|)</div></div>
+    <div class="mini"><b>MASE</b>Compares the forecast's MAE with the MAE of a naive forecast on the training data. Below 1 means better than the naive baseline, above 1 worse. It never divides by the actual, so zeros are harmless.
+      <div class="eq" style="font-size:16px;margin:8px 0 0">MASE = MAE on test set ÷ MAE of in-sample (seasonal) naive on train</div></div>
+  </div>
+  <p style="margin-top:14px">MASE answers the question asked all class, "is this better than the simple rule?", in a single number that works on any series, even one with zeros.</p>
+<pre><code>def smape(actual, predicted):
+    actual, predicted = np.asarray(actual, float), np.asarray(predicted, float)
+    denom = np.abs(actual) + np.abs(predicted)
+    ratio = np.divide(2 * np.abs(actual - predicted), denom, out=np.zeros_like(denom), where=denom != 0)
+    return ratio.mean() * 100
+
+def mase(actual, predicted, train, m=1):
+    scale = np.mean(np.abs(train.values[m:] - train.values[:-m]))   # in-sample naive error, season length m
+    return np.mean(np.abs(np.asarray(actual) - np.asarray(predicted))) / scale</code></pre>
+
+  <div class="card viz"><span class="tag">Visualizer · metrics on the kiosk</span>
+    <div class="sub">Same two forecasts, four metrics. MAPE blows up; sMAPE and MASE stay finite.</div>
+    <div class="tw"><table id="ck_tab"></table></div>
+    <p class="sub" style="margin:0">The MASE of seasonal naive is 1.04, about 1 by construction: the denominator is the error the same copy-last-year rule made on the training years, so the rule is about as accurate on the test year as before. The moving-average forecast scores about 2, twice as bad as the baseline, a verdict no zero in the data can break. One caution: sMAPE is not truly symmetric (it punishes under- and over-forecasts a little differently), so use it alongside MAE, not instead of it.</p>
+  </div>
+
+  <h4>Back on the ice cream series, where MAPE is fine</h4>
+  <div class="card viz"><span class="tag">Visualizer · three metrics agree</span>
+    <div class="btnrow" id="ic_btns" role="group" aria-label="Season length for MASE"><button data-m="12" aria-pressed="true">MASE with m = 12</button><button data-m="1" aria-pressed="false">MASE with m = 1</button></div>
+    <div class="tw"><table id="ic_tab"></table></div>
+    <p id="ic_msg" class="sub" style="margin:0" aria-live="polite"></p>
+  </div>
+  <p>The three metrics agree on the order: seasonal naive first. Seasonal naive scores 1.27 on MASE (m=12) here, because the 2018 growth made the copy a little worse than usual, and every other rule scores between 2.9 and 5.4. It is the same yardstick, in the same units, on the ice cream and the hot chocolate series.</p>
+
+  <h3>sMAPE in a corner case</h3>
+  <div class="card viz"><span class="tag">Visualizer · sMAPE calculator</span>
+    <div class="btnrow"><button data-p="0,0">(0, 0)</button><button data-p="0,5">(0, 5)</button><button data-p="100,110">(100, 110)</button></div>
+    <div class="ctrl"><div><label for="sm_a">Actual</label><input id="sm_a" type="number" value="0" min="0"></div><div><label for="sm_f">Forecast</label><input id="sm_f" type="number" value="5" min="0"></div></div>
+    <div class="kpi" id="sm_out" aria-live="polite"></div>
+  </div>
+<pre><code>def smape_one(actual, predicted):
+    if actual == 0 and predicted == 0:
+        return 0.0                              # no error, and no division by zero
+    return 100 * 2 * abs(actual - predicted) / (abs(actual) + abs(predicted))</code></pre>
+  <p>A forecast of 5 against an actual of 0 scores the maximum, 200%, and a perfect zero forecast scores 0. Both are finite and sensible, which plain MAPE could not manage. Always decide and state how zero over zero is treated.</p>
+  <details><summary>Practice · Check a MASE implementation</summary><div class="dbody">
+    <p>MASE is easy to implement with the wrong scale: it must come from the training data only and match the season length. Ask an AI assistant for <code>mase(actual, forecast, train, m)</code> and an explanation of the denominator. Compute the denominator by hand for the ice cream train with m=12 using numpy, compare it with the AI's function, and compare the final MASE of seasonal naive with ours. Then add a column for m=1.</p>
+    <p style="margin:0"><b>Reflect:</b> why does a MASE computed with m=1 on a strongly seasonal series flatter the forecast?</p></div></details>
+  <div class="card quiz" data-q="4"></div>
+</section>
+
+<!-- RECAP -->
+<section id="recap">
+  <div class="kicker">Recap</div>
+  <h2>Key takeaways</h2>
+  <ul>
+    <li><b>MAE</b> is the typical miss in the data's units, <b>RMSE</b> punishes large misses, and <b>MAPE</b> is a scale-free percentage. Report more than one, and match the metric to the business cost.</li>
+    <li>Never shuffle a time series. Split by time and test on the final period, or use walk-forward folds that always test after the training data.</li>
+    <li>The simple forecasts are mean, median, naive, seasonal naive and drift. On a seasonal series, seasonal naive is the one to beat.</li>
+    <li>A moving average forecast turns flat because forecasts feed forecasts. SES keeps the whole history with decaying weights set by α, but is flat for 12 steps without new actuals. One-step and multi-step scores answer different questions.</li>
+    <li>A baseline is the bar: a model must clearly beat the best simple rule. MASE and sMAPE work when actuals are near zero, and MASE directly says whether the model beats the naive rule.</li>
+  </ul>
+  <h3>Common mistakes</h3>
+  <div class="grid2">
+    <div class="mini">Using <code>train_test_split</code> with shuffling on a time series.</div>
+    <div class="mini">Tuning a parameter such as α on the test year.</div>
+    <div class="mini">Quoting a MAPE for a series that contains zeros.</div>
+    <div class="mini">Comparing a one-step score with a 12-step score as if they were the same task.</div>
+    <div class="mini">Judging a model by its error alone, without a baseline score next to it.</div>
+    <div class="mini">Using a seasonal naive forecast with the wrong season length for the data frequency.</div>
+  </div>
+  <div class="callout" style="margin-top:22px"><b class="h">Closing the ChillPoint story</b>The manager gets a plain answer: do not pay for a 9% error, because copying last year's month already does better, and any tool the vendor proposes must beat that rule on a test year it has never seen. The rule leaves a visible gap, though: it cannot grow with the business. In Class 4 we build models that carry trend and seasonality together, and in Class 5 we make them automatic.</div>
+</section>
+</main>
+
+<footer>Time Series &amp; Recommender System: Class 3 (Post-Read)</footer>
+
+<script>
+(function(){
+"use strict";
+const D={"dates":["2009-01-01","2009-02-01","2009-03-01","2009-04-01","2009-05-01","2009-06-01","2009-07-01","2009-08-01","2009-09-01","2009-10-01","2009-11-01","2009-12-01","2010-01-01","2010-02-01","2010-03-01","2010-04-01","2010-05-01","2010-06-01","2010-07-01","2010-08-01","2010-09-01","2010-10-01","2010-11-01","2010-12-01","2011-01-01","2011-02-01","2011-03-01","2011-04-01","2011-05-01","2011-06-01","2011-07-01","2011-08-01","2011-09-01","2011-10-01","2011-11-01","2011-12-01","2012-01-01","2012-02-01","2012-03-01","2012-04-01","2012-05-01","2012-06-01","2012-07-01","2012-08-01","2012-09-01","2012-10-01","2012-11-01","2012-12-01","2013-01-01","2013-02-01","2013-03-01","2013-04-01","2013-05-01","2013-06-01","2013-07-01","2013-08-01","2013-09-01","2013-10-01","2013-11-01","2013-12-01","2014-01-01","2014-02-01","2014-03-01","2014-04-01","2014-05-01","2014-06-01","2014-07-01","2014-08-01","2014-09-01","2014-10-01","2014-11-01","2014-12-01","2015-01-01","2015-02-01","2015-03-01","2015-04-01","2015-05-01","2015-06-01","2015-07-01","2015-08-01","2015-09-01","2015-10-01","2015-11-01","2015-12-01","2016-01-01","2016-02-01","2016-03-01","2016-04-01","2016-05-01","2016-06-01","2016-07-01","2016-08-01","2016-09-01","2016-10-01","2016-11-01","2016-12-01","2017-01-01","2017-02-01","2017-03-01","2017-04-01","2017-05-01","2017-06-01","2017-07-01","2017-08-01","2017-09-01","2017-10-01","2017-11-01","2017-12-01","2018-01-01","2018-02-01","2018-03-01","2018-04-01","2018-05-01","2018-06-01","2018-07-01","2018-08-01","2018-09-01","2018-10-01","2018-11-01","2018-12-01"],"ice":[2361,2314,3194,3954,4198,4850,5258,4791,4073,3127,2896,2598,2577,3011,3402,3858,4926,5182,5672,5108,4303,3426,3229,2675,2742,2980,3678,4367,5199,5724,6188,5301,4502,3663,3371,3196,3069,3146,3671,4688,5529,6011,5891,5692,4891,4134,3686,3279,3492,3592,4158,4948,5353,6102,6194,5782,5077,4653,3603,3692,3283,3775,4397,5203,6050,6589,6482,6082,5568,4580,3785,3535,3700,4205,4656,5488,6087,6726,6941,6376,5751,4750,4231,3950,3909,4467,4798,5616,6532,7047,7213,6682,5839,5130,4231,4001,4147,4435,5236,5697,6624,7482,7273,7114,6001,5369,4642,4486,4844,4553,5507,6190,6845,7197,7622,7124,6499,5678,5416,4770],"cocoa":[22,25,14,12,3,1,1,3,3,7,14,24,35,23,21,10,4,0,3,3,5,18,15,30,25,28,14,7,6,0,2,3,3,6,25,33,23,33,21,16,6,1,1,0,4,17,17,20,19,17,23,10,3,1,1,0,4,18,25,33,32,35,19,9,4,1,1,3,8,7,13,33,36,39,22,13,9,0,0,2,6,7,29,26,32,33,22,12,1,2,1,2,8,17,17,33,40,14,11,15,7,0,0,3,3,13,22,35,25,27,22,9,6,0,0,1,5,12,20,29],"alphaOpt":0.9999999850988388,"randTest":[29,33,41,54,56,59,63,69,78,79,95,119],"rf":{"rand":[200.56,241.02,3.84],"time":[330.7,405.53,5.76]}};
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const nf=(n,d)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const C={o:"#B8530F",a:"#C98A1E",b:"#5B4330",r:"#8A3410",g:"#9A8B72",ink:"#33291E"};
+
+/* progress + nav */
+const prog=$("#prog"),links=$$(".topbar a"),secs=links.map(a=>$(a.getAttribute("href")));
+function onScroll(){const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";let cur=-1;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<120)cur=i});links.forEach((a,i)=>a.classList.toggle("active",i===cur))}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+/* date helpers */
+const mLabel=(y0,m0,i)=>new Date(Date.UTC(y0,m0+i,1)).toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
+const dLabel=(i,base=Date.UTC(2016,0,1))=>new Date(base+i*864e5).toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const monthLabels=(y0,m0,n)=>Array.from({length:n},(_,i)=>mLabel(y0,m0,i));
+const yearTicks=(y0,m0,n)=>{const t=[];for(let i=0;i<n;i++){const d=new Date(Date.UTC(y0,m0+i,1));if(d.getUTCMonth()===0)t.push({i,label:String(d.getUTCFullYear())})}return t};
+
+/* nice ticks */
+function niceTicks(lo,hi,k){const raw=(hi-lo)/k,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,s=(f<1.5?1:f<3?2:f<7?5:10)*p;const t=[];for(let v=Math.ceil(lo/s)*s;v<=hi+1e-9;v+=s)t.push(+v.toFixed(10));return t}
+const tickFmt=(v,step)=>Math.abs(v)>=1000?fmt(v):(Math.abs(v)<10?nf(v,v%1?2:0):nf(v,Math.abs(v)<100&&v%1?1:0));
+
+function legend(root,series){root.innerHTML='<div class="lg">'+series.map(s=>`<span><svg width="30" height="10" aria-hidden="true"><line x1="0" y1="5" x2="30" y2="5" stroke="${s.color}" stroke-width="${s.w||2.5}" stroke-dasharray="${s.dash||""}" opacity="${s.op||1}"/></svg>${s.name}</span>`).join("")+"</div>"}
+
+/* line chart */
+function lineChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=12,pb=o.noX?8:26,N=o.labels.length;
+  let lo=Infinity,hi=-Infinity;o.series.forEach(s=>s.y.forEach(v=>{if(v!=null&&isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.06||1;if(o.ymin==null)lo-=pad;if(o.ymax==null)hi+=pad;
+  const x=i=>pl+i*(W-pl-pr)/(N-1),y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb);
+  root.innerHTML='<div class="chw"><div class="tip"></div></div>';const wrap=$(".chw",root),tip=$(".tip",wrap);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Line chart",tabindex:0});wrap.insertBefore(svg,tip);
+  niceTicks(lo,hi,o.yt||4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9","stroke-width":1},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  if(o.zero&&lo<0&&hi>0)el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  (o.xt||[]).forEach(t=>{el("line",{x1:x(t.i),x2:x(t.i),y1:H-pb,y2:H-pb+4,stroke:"#66573F"},svg);const e=el("text",{x:x(t.i),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);e.textContent=t.label});
+  (o.vlines||[]).forEach(v=>{el("line",{x1:x(v.i),x2:x(v.i),y1:pt,y2:H-pb,stroke:v.color||C.r,"stroke-width":2,"stroke-dasharray":v.dash||"6 4"},svg);if(v.label){const t=el("text",{x:x(v.i)+4,y:pt+11,"font-size":11.5,"font-weight":700,fill:v.color||C.r},svg);t.textContent=v.label}});
+  o.series.forEach(s=>{let d="",pen=false;s.y.forEach((v,i)=>{if(v==null||!isFinite(v)){pen=false;return}d+=(pen?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1);pen=true});
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":s.w||2.5,"stroke-dasharray":s.dash||"",opacity:s.op||1,"stroke-linejoin":"round"},svg)});
+  (o.marks||[]).forEach(m=>{el("circle",{cx:x(m.i),cy:y(m.v),r:6,fill:m.color||C.r,stroke:"#FFFBF1","stroke-width":2},svg);if(m.label){const t=el("text",{x:x(m.i)+(m.dx||9),y:y(m.v)+(m.dy||4),"font-size":11.5,"font-weight":700,fill:m.color||C.r,"text-anchor":m.anchor||"start"},svg);t.textContent=m.label}});
+  const g=el("g",{style:"display:none"},svg),gl=el("line",{y1:pt,y2:H-pb,stroke:"#33291E","stroke-width":1,"stroke-dasharray":"3 3"},g),dots=o.series.map(s=>el("circle",{r:4,fill:s.color,stroke:"#FFFBF1","stroke-width":1.5},g));
+  let cur=Math.floor(N/2);
+  function show(i){cur=i;g.style.display="";const px=x(i);gl.setAttribute("x1",px);gl.setAttribute("x2",px);
+    let h=`<b>${o.labels[i]}</b>`;o.series.forEach((s,k)=>{const v=s.y[i];if(v==null||!isFinite(v)){dots[k].style.display="none";return}dots[k].style.display="";dots[k].setAttribute("cx",px);dots[k].setAttribute("cy",y(v));h+=`<br>${s.name}: ${(o.vFmt||fmt)(v)}`});
+    tip.innerHTML=h;tip.style.display="block";const pct=px/W*100;tip.style.left=pct>60?"auto":`calc(${pct}% + 10px)`;tip.style.right=pct>60?`calc(${100-pct}% + 10px)`:"auto";tip.style.top="0";
+    o.onHover&&o.onHover(i)}
+  svg.addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W;show(Math.max(0,Math.min(N-1,Math.round((px-pl)/(W-pl-pr)*(N-1)))))});
+  svg.addEventListener("pointerleave",()=>{g.style.display="none";tip.style.display="none"});
+  svg.addEventListener("keydown",e=>{if(e.key==="ArrowRight"){show(Math.min(N-1,cur+1));e.preventDefault()}if(e.key==="ArrowLeft"){show(Math.max(0,cur-1));e.preventDefault()}});
+  svg.addEventListener("blur",()=>{g.style.display="none";tip.style.display="none"});
+}
+/* bar chart (grouped) */
+let barId=0;
+function barChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=22,pb=28,N=o.labels.length,ns=o.series.length,id="h"+(barId++);
+  let lo=Math.min(0,...o.series.flatMap(s=>s.v)),hi=Math.max(0,...o.series.flatMap(s=>s.v));if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.08;hi+=pad;if(lo<0)lo-=pad;
+  const y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb),gw=(W-pl-pr)/N,bw=gw*.78/ns;
+  root.innerHTML="";const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Bar chart"});root.appendChild(svg);
+  const defs=el("defs",{},svg),pat=el("pattern",{id,width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"},defs);el("rect",{width:6,height:6,fill:"#F5DDBD"},pat);el("rect",{width:3,height:6,fill:C.b},pat);
+  niceTicks(lo,hi,4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9"},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  o.labels.forEach((l,i)=>{const t=el("text",{x:pl+gw*(i+.5),y:H-9,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);t.textContent=l;
+    o.series.forEach((s,k)=>{const v=s.v[i];if(v==null)return;const bx=pl+gw*i+gw*.11+bw*k,y0=y(0),y1=y(v);
+      const r=el("rect",{x:bx,y:Math.min(y0,y1),width:bw,height:Math.max(1,Math.abs(y1-y0)),fill:s.hatch?`url(#${id})`:s.color,stroke:s.hatch?C.b:"none"},svg);el("title",{},r).textContent=`${l}: ${(o.vFmt||fmt)(v)}`;
+      if(o.labelsOn!==false&&ns<=2){const t2=el("text",{x:bx+bw/2,y:(v>=0?y1-4:y1+12),"text-anchor":"middle","font-size":ns>1?9.5:11,fill:C.ink},svg);t2.textContent=(o.vFmt||fmt)(v)}})});
+}
+
+/* ---------- metrics & forecasts ---------- */
+const ICE=D.ice,N=ICE.length,TR=ICE.slice(0,108),TE=ICE.slice(108),COC=D.cocoa;
+const EPS=2.220446049250313e-16;
+const sum=a=>a.reduce((x,y)=>x+y,0),avg=a=>sum(a)/a.length;
+const mae=(a,p)=>avg(a.map((v,i)=>Math.abs(v-p[i])));
+const rmse=(a,p)=>Math.sqrt(avg(a.map((v,i)=>(v-p[i])**2)));
+const mape=(a,p)=>avg(a.map((v,i)=>Math.abs(v-p[i])/Math.max(Math.abs(v),EPS)))*100;
+const smape=(a,p)=>avg(a.map((v,i)=>{const d=Math.abs(v)+Math.abs(p[i]);return d?2*Math.abs(v-p[i])/d:0}))*100;
+const mase=(a,p,tr,m)=>{const d=[];for(let i=m;i<tr.length;i++)d.push(Math.abs(tr[i]-tr[i-m]));return mae(a,p)/avg(d)};
+const perf=(a,p)=>({MAE:mae(a,p),RMSE:rmse(a,p),MAPE:mape(a,p)});
+const median=a=>{const s=[...a].sort((x,y)=>x-y),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2};
+function maF(h,w,steps){const v=[...h],o=[];for(let i=0;i<steps;i++){const n=avg(v.slice(-w));o.push(n);v.push(n)}return o}
+function lvl(h,a){let l=h[0];for(const y of h)l=a*y+(1-a)*l;return l}
+function ses1(h,fut,a){let l=lvl(h,a);const o=[];for(const y of fut){o.push(l);l=a*y+(1-a)*l}return o}
+function drift(h,endBack){const T=h.length-endBack,sl=(h[T-1]-h[0])/(T-1);return Array.from({length:12},(_,i)=>h[T-1]+sl*(i+1+endBack))}
+const ALPHA=0.3;
+const F={"Mean":TR.length?Array(12).fill(avg(TR)):0,"Median":Array(12).fill(median(TR)),"Naive":Array(12).fill(TR[107]),"Seasonal naive":TR.slice(-12),"Drift":drift(TR,0),"MA(3)":maF(TR,3,12),"MA(12)":maF(TR,12,12),"SES (12-step)":Array(12).fill(lvl(TR,ALPHA)),"SES (1-step)":ses1(TR,TE,ALPHA)};
+const R={};Object.keys(F).forEach(k=>R[k]=perf(TE,F[k]));
+const MNAME=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ---------- cold open ---------- */
+(function(){
+  const labels=monthLabels(2009,0,N),xt=yearTicks(2009,0,N);
+  const s=[{name:"Train (to Dec 2017)",y:ICE.map((v,i)=>i<108?v:null),color:C.o,w:2.4},{name:"Test year (2018)",y:ICE.map((v,i)=>i>=107?v:null),color:C.b,w:2.8}];
+  lineChart($("#o_chart"),{labels,xt,series:s,h:240,aria:"Ice cream sales per month"});
+  let h="<tr><th>Month</th><th class='num'>2016</th><th class='num'>2017</th><th class='num'>2018</th></tr>";
+  for(let m=0;m<12;m++)h+=`<tr><td>${MNAME[m]}</td>${[84,96,108].map(b=>`<td class="num">${fmt(ICE[b+m])}</td>`).join("")}</tr>`;
+  $("#o_tab").innerHTML=h;
+})();
+
+/* ---------- metric lab ---------- */
+(function(){
+  const A=[100,100,100,100],box=$("#ml_sl");let f=[110,90,110,90];
+  box.innerHTML=[0,1,2,3].map(i=>`<div><label for="ml_${i}">Forecast, month ${i+1}: <output id="mo_${i}"></output></label><input id="ml_${i}" type="range" min="50" max="160" step="1" value="${f[i]}"></div>`).join("");
+  function draw(){
+    f=[0,1,2,3].map(i=>+$("#ml_"+i).value);f.forEach((v,i)=>$("#mo_"+i).textContent=v);
+    const m=mae(A,f),r=rmse(A,f),p=mape(A,f);
+    $("#ml_kpi").innerHTML=`<div><b>MAE</b><span>${nf(m,1)}</span></div><div><b>RMSE</b><span>${nf(r,1)}</span></div><div><b>MAPE</b><span>${nf(p,1)}%</span></div>`;
+    barChart($("#ml_chart"),{labels:["Month 1","Month 2","Month 3","Month 4"],series:[{name:"Actual",v:A,color:C.g,hatch:true},{name:"Forecast",v:f,color:C.o}],h:200,ymin:0,vFmt:fmt,aria:"Actual versus forecast"});
+    $("#ml_msg").textContent=r>m*1.05?"RMSE is clearly above MAE: the errors are uneven, with a few large misses.":"RMSE is close to MAE: the misses are all about the same size.";
+  }
+  $$("#ml_sl input").forEach(i=>i.addEventListener("input",draw));
+  const set=v=>{v.forEach((x,i)=>$("#ml_"+i).value=x);draw()};
+  $("#ml_a").onclick=()=>set([110,90,110,90]);$("#ml_b").onclick=()=>set([100,100,100,140]);draw();
+  const a=$("#mp_a");function d2(){const v=+a.value;$("#mp_ao").textContent=v;$("#mp_out").innerHTML=`<div class="bar"><span>Miss of 10 at actual ${v}</span><div class="track"><div class="fill" style="width:${Math.min(100,1000/v)}%;background:var(--orange)"></div></div><span class="v">${nf(1000/v,1)}%</span></div>`}
+  a.addEventListener("input",d2);d2();
+})();
+
+/* ---------- splits ---------- */
+(function(){
+  const test=new Set(D.randTest);let mode="rand";
+  function draw(){
+    let h='<div class="hd"></div>'+MNAME.map(m=>`<div class="hd" aria-hidden="true">${m[0]}</div>`).join("");
+    for(let y=0;y<10;y++){h+=`<div class="yr">${2009+y}</div>`;for(let m=0;m<12;m++){const i=y*12+m,t=mode==="rand"?test.has(i):i>=108;h+=`<div class="c ${t?"test":"tr"}" title="${MNAME[m]} ${2009+y}"></div>`}}
+    $("#sp_grid").innerHTML=h;
+    const r=mode==="rand"?D.rf.rand:D.rf.time;
+    $("#sp_tab").innerHTML=`<tr><th>Random forest on ${mode==="rand"?"a random split":"a time split"}</th><th class="num">MAE</th><th class="num">RMSE</th><th class="num">MAPE %</th></tr><tr class="hl"><td>Score</td><td class="num">${nf(r[0],1)}</td><td class="num">${nf(r[1],1)}</td><td class="num">${nf(r[2],2)}</td></tr>`;
+    $("#sp_msg").textContent=mode==="rand"?"Every test month sits between training months, so the forest recalls its neighbours. Looks great (MAPE 3.8%), but it is cheating.":"The whole test year lies after everything the model has seen: the real forecasting job. The honest MAPE is 5.8%.";
+    $$("#sp_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode));
+  }
+  $$("#sp_btns button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;draw()});draw();
+  // walk-forward
+  const W=720,H=130,pl=70,pr=14,x=i=>pl+i*(W-pl-pr)/N,svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Three walk-forward folds"});
+  const folds=[[84,96],[96,108],[108,120]];let tb="<tr><th>Fold</th><th>Train</th><th>Test</th></tr>";
+  folds.forEach(([a,b],k)=>{const y=14+k*38;const t=el("text",{x:8,y:y+17,"font-size":13,"font-weight":700,fill:C.b},svg);t.textContent="Fold "+(k+1);
+    el("rect",{x:x(0),y,width:x(a)-x(0),height:26,rx:4,fill:"#E7DBC2",stroke:"#D6C7A9"},svg);
+    el("rect",{x:x(a),y,width:x(b)-x(a),height:26,rx:4,fill:C.o},svg);
+    const l=monthLabels(2009,0,N);tb+=`<tr><td>${k+1}</td><td>${l[0]} to ${l[a-1]}</td><td>${l[a]} to ${l[b-1]}</td></tr>`});
+  yearTicks(2009,0,N+1).forEach(t=>{const tx=el("text",{x:x(t.i),y:H-4,"text-anchor":"middle","font-size":10.5,fill:"#66573F"},svg);tx.textContent=t.label});
+  $("#wf").appendChild(svg);$("#wf_tab").innerHTML=tb;
+  $("#wf").insertAdjacentHTML("beforeend",'<div class="legend"><span><i class="sw"></i>train</span><span><i class="sw" style="background:#B8530F"></i>test (always after the training data)</span></div>');
+})();
+
+/* ---------- forecast explorer ---------- */
+const STYLE={"Mean":[C.g,""],"Median":[C.g,"6 4"],"Naive":[C.b,""],"Seasonal naive":[C.o,""],"Drift":[C.r,"6 4"],"MA(3)":[C.a,""],"MA(12)":[C.a,"6 4"],"SES (12-step)":[C.b,"2 4"],"SES (1-step)":[C.r,"2 4"]};
+(function(){
+  const from=84,L=monthLabels(2016,0,36),xt=[];for(let i=0;i<36;i+=6)xt.push({i,label:mLabel(2016,0,i)});
+  const on=new Set(["Mean","Naive","Seasonal naive","Drift"]),box=$("#fx_btns");
+  Object.keys(F).forEach(k=>{const b=document.createElement("button");b.textContent=k;b.dataset.k=k;b.onclick=()=>{on.has(k)?on.delete(k):on.add(k);draw()};box.appendChild(b)});
+  function draw(){
+    const ser=[{name:"History",y:ICE.slice(from).map((v,i)=>i<24?v:(i===24?null:null)),color:C.g,w:2.4,op:.8},{name:"Actual 2018",y:ICE.slice(from).map((v,i)=>i>=24?v:null),color:C.ink,w:3.5}];
+    Object.keys(F).filter(k=>on.has(k)).forEach(k=>ser.push({name:k,y:Array(24).fill(null).concat(F[k]),color:STYLE[k][0],dash:STYLE[k][1],w:2.6}));
+    lineChart($("#fx_chart"),{labels:L,xt,series:ser,h:280,aria:"Forecasts versus actual 2018"});legend($("#fx_lg"),ser);
+    $$("button",box).forEach(b=>b.setAttribute("aria-pressed",on.has(b.dataset.k)));
+    const order=Object.keys(F).sort((a,b)=>R[a].MAPE-R[b].MAPE);
+    $("#fx_tab").innerHTML="<tr><th>Forecast</th><th class='num'>MAE</th><th class='num'>RMSE</th><th class='num'>MAPE %</th></tr>"+order.map(k=>`<tr${on.has(k)?' class="hl"':""}><td>${k}</td><td class="num">${fmt(R[k].MAE)}</td><td class="num">${fmt(R[k].RMSE)}</td><td class="num">${nf(R[k].MAPE,2)}</td></tr>`).join("");
+  }
+  draw();
+  let e=0;function dd(){const f=drift(TR,e),m=mape(TE,f);$("#dr_out").innerHTML=`<div class="kpi"><div><b>Anchor</b><span style="font-size:20px">${e?"Nov 2017":"Dec 2017"}</span></div><div><b>MAPE</b><span>${nf(m,2)}%</span></div><div><b>First forecast</b><span>${fmt(f[0])}</span></div></div>`;$$("#dr_btns button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.e===e))}
+  $$("#dr_btns button").forEach(b=>b.onclick=()=>{e=+b.dataset.e;dd()});dd();
+})();
+
+/* ---------- MA forecast ---------- */
+(function(){
+  const from=84,L=monthLabels(2016,0,36),xt=[];for(let i=0;i<36;i+=6)xt.push({i,label:mLabel(2016,0,i)});
+  function draw(){
+    const w=+$("#ma_w").value;$("#ma_wo").textContent=w;const f=maF(TR,w,12);
+    const ser=[{name:"History",y:ICE.slice(from).map((v,i)=>i<24?v:null),color:C.g,w:2.4,op:.8},{name:"Actual 2018",y:ICE.slice(from).map((v,i)=>i>=24?v:null),color:C.ink,w:3.5},{name:`MA(${w}) forecast`,y:Array(24).fill(null).concat(f),color:C.o,w:3}];
+    lineChart($("#ma_chart"),{labels:L,xt,series:ser,h:260,aria:"Moving average forecast"});legend($("#ma_lg"),ser);
+    const tw=$("#ma_tabw");
+    if(w<=6){const v=[...TR];let h=`<tr><th>Step</th><th>Window used (last ${w} values)</th><th class="num">Forecast</th></tr>`;
+      for(let s=0;s<5;s++){const win=v.slice(-w),n=avg(win);h+=`<tr><td>${s+1}</td><td>${win.map((x,i)=>fmt(x)+(i>=w-s?" (fcst)":"")).join(", ")}</td><td class="num">${fmt(n)}</td></tr>`;v.push(n)}
+      $("#ma_tab").innerHTML=h;tw.style.display=""}else tw.style.display="none";
+    const sp=Math.max(...f)-Math.min(...f);
+    $("#ma_msg").innerHTML=`MAPE on 2018: <b>${nf(mape(TE,f),1)}%</b>. Forecast range across the year: <b>${fmt(sp)}</b> tubs${sp<1?" (a single flat line)":""}.${w<=6?" In the table, from the second step the window contains the method's own forecasts.":""}`;
+  }
+  $("#ma_w").addEventListener("input",draw);draw();
+})();
+
+/* ---------- SES lab ---------- */
+(function(){
+  const from=84,L=monthLabels(2016,0,36),xt=[];for(let i=0;i<36;i+=6)xt.push({i,label:mLabel(2016,0,i)});
+  const sl=$("#se_a");
+  function draw(){
+    const a=+sl.value;$("#se_ao").textContent=nf(a,2);
+    barChart($("#se_w"),{labels:Array.from({length:12},(_,i)=>String(i)),series:[{name:"weight",v:Array.from({length:12},(_,i)=>a*Math.pow(1-a,i)),color:C.o}],h:170,ymin:0,ymax:1,labelsOn:false,vFmt:v=>nf(v,3),yFmt:v=>nf(v,1),aria:"Weights by months ago"});
+    const f12=Array(12).fill(lvl(TR,a)),f1=ses1(TR,TE,a);
+    const ser=[{name:"History",y:ICE.slice(from).map((v,i)=>i<24?v:null),color:C.g,w:2.4,op:.8},{name:"Actual 2018",y:ICE.slice(from).map((v,i)=>i>=24?v:null),color:C.ink,w:3.5},{name:"12 months ahead in one go",y:Array(24).fill(null).concat(f12),color:C.o,w:3},{name:"One month ahead, updated monthly",y:Array(24).fill(null).concat(f1),color:C.r,w:2.6,dash:"6 4"}];
+    lineChart($("#se_chart"),{labels:L,xt,series:ser,h:250,aria:"SES forecasts"});legend($("#se_lg"),ser);
+    $("#se_kpi").innerHTML=`<div><b>Level at end of 2017</b><span>${fmt(lvl(TR,a))}</span></div><div><b>12-step MAPE</b><span>${nf(mape(TE,f12),1)}%</span></div><div><b>1-step MAPE</b><span>${nf(mape(TE,f1),1)}%</span></div>`;
+    $("#se_msg").textContent=(a>=.99?"With α=1 the update becomes ŷ(t+1)=y(t): this is the naive forecast. ":"")+(a<.1?"A low α spreads weight over many months: steady and slow to react. ":a>.7?"A high α puts nearly all weight on the last month: reacts quickly, forgets history. ":"")+"The 12-step forecast is one repeated value because no new actuals arrive.";
+  }
+  sl.addEventListener("input",draw);[["p04",.04],["p3",.3],["p9",.9],["p1",1]].forEach(([id,v])=>$("#se_"+id).onclick=()=>{sl.value=v;draw()});draw();
+  $("#se_chk").textContent=`Check with α=0.3: our loop gives ${nf(lvl(TR,.3),4)}, matching the statsmodels first forecast (5,327.2826).`;
+  const al=[.05,.1,.3,.6,.9],v=al.map(a=>mape(TE,ses1(TR,TE,a)));
+  barChart($("#se_grid"),{labels:al.map(a=>"α = "+a),series:[{name:"MAPE",v,color:C.o}],h:210,ymin:0,vFmt:v=>nf(v,2)+"%",yFmt:v=>nf(v,0),aria:"One-step MAPE by alpha"});
+  $("#se_grid").nextElementSibling.textContent="Higher α keeps improving here, because the level has to chase a strongly seasonal series. Seasonal naive's 12-step MAPE is 6.3% for comparison.";
+})();
+
+/* ---------- scoreboard ---------- */
+(function(){
+  let k="MAPE";const sl=$("#bd_v");
+  function draw(){
+    const keys=Object.keys(F).sort((a,b)=>R[a][k]-R[b][k]),vals=keys.map(n=>R[n][k]);$("#bd_vo").textContent=nf(+sl.value,1)+"%";
+    $("#bd_c").style.display=k==="MAPE"?"":"none";
+    const W=720,rowH=30,H=keys.length*rowH+40,pl=120,pr=60,mx=Math.max(...vals,k==="MAPE"?+sl.value:0)*1.08,x=v=>pl+v/mx*(W-pl-pr);
+    const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Scores of all forecasts"});
+    niceTicks(0,mx,5).forEach(t=>{el("line",{x1:x(t),x2:x(t),y1:14,y2:H-24,stroke:"#D6C7A9"},svg);const tx=el("text",{x:x(t),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=fmt(t)});
+    keys.forEach((n,i)=>{const y=18+i*rowH,one=n==="SES (1-step)",best=i===0&&!one;
+      const t=el("text",{x:pl-8,y:y+16,"text-anchor":"end","font-size":13,"font-weight":best?700:500,fill:C.ink},svg);t.textContent=n;
+      const r=el("rect",{x:pl,y:y+2,width:x(vals[i])-pl,height:20,rx:4,fill:one?"#F5DDBD":(n==="Seasonal naive"?C.o:C.a),stroke:one?C.b:"none","stroke-dasharray":one?"4 3":""},svg);el("title",{},r).textContent=`${n}: ${nf(vals[i],2)}`;
+      const v=el("text",{x:x(vals[i])+6,y:y+17,"font-size":12.5,"font-weight":700,fill:C.ink},svg);v.textContent=k==="MAPE"?nf(vals[i],1)+"%":fmt(vals[i])});
+    if(k==="MAPE"){const vx=x(+sl.value);el("line",{x1:vx,x2:vx,y1:10,y2:H-24,stroke:C.r,"stroke-width":2.5,"stroke-dasharray":"6 4"},svg);const t=el("text",{x:vx+6,y:H-30,"font-size":12.5,"font-weight":700,fill:C.r},svg);t.textContent="vendor claim"}
+    $("#bd_chart").replaceChildren(svg);
+    const best=R["Seasonal naive"].MAPE,vc=+sl.value;
+    $("#bd_msg").innerHTML=k==="MAPE"?(vc>best?`A claim of <b>${nf(vc,1)}%</b> is worse than seasonal naive (${nf(best,1)}%): no reason to pay.`:`A claim of <b>${nf(vc,1)}%</b> beats seasonal naive (${nf(best,1)}%). It would now have to be confirmed on a test year the vendor has never seen.`):"Same ranking idea in the data's own units. The dashed row is not comparable: it receives a fresh actual every month.";
+    $$("#bd_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
+  }
+  $$("#bd_btns button").forEach(b=>b.onclick=()=>{k=b.dataset.k;draw()});sl.addEventListener("input",draw);draw();
+})();
+
+/* ---------- cocoa ---------- */
+(function(){
+  const CT=COC.slice(0,108),CS=COC.slice(108),cf={"Seasonal naive":CT.slice(-12),"MA(12)":maF(CT,12,12)};
+  const L=monthLabels(2009,0,N),xt=yearTicks(2009,0,N);
+  const zeros=COC.map((v,i)=>v===0?0:null);
+  const ser=[{name:"Cups per month",y:COC,color:C.o,w:2.4}];
+  lineChart($("#hc_chart"),{labels:L,xt,series:ser,h:220,marks:COC.map((v,i)=>v===0?{i,v:0,color:C.r}:null).filter(Boolean),aria:"Hot chocolate cups per month with zero months marked"});
+  $("#hc_lg").innerHTML='<div class="lg"><span><svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#B8530F" stroke-width="2.5"/></svg>cups per month</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="#8A3410"/></svg>month with zero cups</span></div>';
+  $("#hc_msg").innerHTML=`Months with zero cups: <b>${COC.filter(v=>v===0).length}</b> out of ${COC.length}, all in summer.`;
+  const expo=v=>v>1e6?v.toExponential(1).replace("e+"," × 10^")+"":nf(v,1);
+  let h="<tr><th>Forecast</th><th class='num'>MAE (cups)</th><th class='num'>MAPE %</th><th class='num'>sMAPE %</th><th class='num'>MASE (m=12)</th></tr>";
+  Object.keys(cf).forEach(k=>{const f=cf[k],mp=mape(CS,f);h+=`<tr><td>${k}</td><td class="num">${nf(mae(CS,f),2)}</td><td class="num">${mp>1e6?"≈ 8.7 × 10<sup>17</sup>":nf(mp,1)}</td><td class="num">${nf(smape(CS,f),1)}</td><td class="num">${nf(mase(CS,f,CT,12),2)}</td></tr>`});
+  $("#ck_tab").innerHTML=h;
+  // ice table
+  let m=12;
+  function ic(){
+    const keys=["Mean","Naive","Seasonal naive","Drift","MA(12)","SES (12-step)"],rows=keys.map(k=>({k,mp:mape(TE,F[k]),sm:smape(TE,F[k]),ms:mase(TE,F[k],TR,m)})).sort((a,b)=>a.ms-b.ms);
+    $("#ic_tab").innerHTML=`<tr><th>Forecast</th><th class="num">MAPE %</th><th class="num">sMAPE %</th><th class="num">MASE (m=${m})</th></tr>`+rows.map((r,i)=>`<tr${i===0?' class="best"':""}><td>${r.k}</td><td class="num">${nf(r.mp,2)}</td><td class="num">${nf(r.sm,2)}</td><td class="num">${nf(r.ms,2)}</td></tr>`).join("");
+    const sn=mase(TE,F["Seasonal naive"],TR,m);
+    $("#ic_msg").textContent=m===12?"With the season length matched (m=12) the three metrics agree on the order. Below 1 would mean beating copy-last-year on its own training years.":`With m=1 the denominator is the month-to-month change, which a strongly seasonal series makes large, so every MASE shrinks (seasonal naive: ${nf(sn,2)}) and the forecasts look better than they are.`;
+    $$("#ic_btns button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.m===m));
+  }
+  $$("#ic_btns button").forEach(b=>b.onclick=()=>{m=+b.dataset.m;ic()});ic();
+  // smape calc
+  function sc(){const a=+$("#sm_a").value,f=+$("#sm_f").value,d=Math.abs(a)+Math.abs(f),s=d?100*2*Math.abs(a-f)/d:0;
+    $("#sm_out").innerHTML=`<div><b>sMAPE</b><span>${nf(s,1)}%</span></div><div><b>Plain MAPE</b><span style="font-size:18px">${a===0?(f===0?"undefined (0/0)":"undefined (÷ 0)"):nf(Math.abs(a-f)/Math.abs(a)*100,1)+"%"}</span></div>`}
+  $$("[data-p]").forEach(b=>b.onclick=()=>{const [a,f]=b.dataset.p.split(",");$("#sm_a").value=a;$("#sm_f").value=f;sc()});
+  $("#sm_a").addEventListener("input",sc);$("#sm_f").addEventListener("input",sc);sc();
+})();
+
+/* ---------- quizzes ---------- */
+const Q=[
+ {q:"Two forecasts of ChillPoint sales have the same MAE, but forecast B has a clearly higher RMSE. What does this tell you?",o:["Forecast B is biased and always lies above the actual values in every month","Forecast B has the lower percentage error on each single month","Forecast B contains a few large misses, while A has many small ones","Forecast B would score a lower MAPE because RMSE and MAPE agree"],a:2,e:"RMSE squares every error, so a few large misses raise it much more than the same total error spread over many small ones, while MAE treats them equally. Bias is the average signed error and says nothing about RMSE versus MAE (A). A higher RMSE gives no information about lower percentage errors per month (B). MAPE and RMSE are computed differently and can rank forecasts in opposite orders (D)."},
+ {q:"A colleague applies train_test_split with shuffling to monthly sales and reports an excellent score. What is the main problem?",o:["Training rows can come from after the test rows, so the future leaks in","The test set becomes too small to compute any error metric reliably","Shuffling changes the average of the series, so the metrics are wrong","Time series models require the rows to be sorted alphabetically"],a:0,e:"Shuffling mixes past and future, so the model trains on months that come after the ones it is tested on, which is information it would not have in real life, and the score is too optimistic. The test set size is set by the split fraction and does not shrink (B). Shuffling only reorders rows, so the overall average is unchanged (C). Models need rows in time order, not in alphabetical order, and the real issue is the order of time (D)."},
+ {q:"ChillPoint sales rise every year and peak every summer. Which simple rule is the sensible first baseline?",o:["Mean of all history, because averages smooth out the noise in sales","Naive from last month, because recent data is always the best guide","Median of all history, because it is not affected by unusual months","Seasonal naive, because it keeps last year's cycle for each month"],a:3,e:"The series has a strong yearly cycle, and the seasonal naive rule is the only one of these that reproduces it by using the same month of the previous year. The mean produces a flat line that ignores both the trend and the cycle (A). The naive rule repeats one month, December, for the whole year, which is low season (B). The median is also flat, so it gives the same weakness as the mean (C)."},
+ {q:"SES forecasts the next 12 months as one repeated value. What is the reason?",o:["The smoothing level is always set to exactly zero by the statsmodels library","Beyond the first step, no new actual values exist to update the level","SES discards all the history except for the last three months","Exponential weights make the forecast equal to the series mean"],a:1,e:"The level changes only when a new actual value arrives. For a 12-month forecast there are none, so each step reuses the last level, and the result is a flat line. The smoothing level is a parameter between 0 and 1 and is estimated or set by us, and it is not forced to zero (A). SES uses the entire history with decaying weights, which is the very point of it, and the last three months idea belongs to a moving average (C). The forecast equals the level, which is a weighted value of recent data and is not the same as the overall mean (D)."},
+ {q:"A kiosk sells zero units in some months. Which metric is the safest way to compare two forecasts for it?",o:["MASE, because it never divides by the actual value of a month","MAPE, because it is easy to explain as a percentage of sales","RMSE, because squaring removes the effect of months with zero sales","Mean error, because the signed errors cancel out for any series"],a:0,e:"MASE divides by an error computed on the training data, not by the actuals, so months with zero sales do not break it, and it also says whether the forecast beats the naive baseline. MAPE divides by the actual and is undefined at zero (B). Squaring does not remove anything: RMSE works with zeros but is in units of cups and cannot say how good it is relative to a baseline (C). The mean of signed errors lets over- and under-forecasts cancel out, so a bad forecast can score zero (D)."}];
+$$(".quiz").forEach(box=>{
+  const d=Q[+box.dataset.q];let done=false;
+  box.innerHTML=`<div class="ct" style="color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase">Check your understanding</div><div class="q"></div><div class="os"></div><div class="fb" role="status"></div>`;
+  $(".q",box).textContent=d.q;
+  d.o.forEach((t,i)=>{const b=document.createElement("button");b.className="opt";b.type="button";b.innerHTML="<b>"+"ABCD"[i]+".</b> ";b.appendChild(document.createTextNode(t));
+    b.onclick=()=>{const fb=$(".fb",box);if(i===d.a){done=true;b.classList.add("right");$$(".opt",box).forEach(x=>x.disabled=true);fb.innerHTML="<b>Correct.</b> ";fb.appendChild(document.createTextNode(d.e))}else{b.classList.add("wrong");b.disabled=true;fb.innerHTML="<b>Not quite — try another option.</b>"}fb.classList.add("show")};
+    $(".os",box).appendChild(b)});
+});
+
+})();
+</script>
+</body>
+</html>
