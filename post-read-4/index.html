@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smooth Operators</title>
+<style>
+
+:root{
+  --bg:#F1E8D6; --paper:#FAF4E6; --card:#FFFBF1; --sand:#E7DBC2; --line:#D6C7A9;
+  --ink:#33291E; --muted:#66573F; --brown:#5B4330; --deep:#3B2A1C;
+  --orange:#B8530F; --orange-ink:#9C4509; --orange-btn:#A84A0B; --orange-2:#D9792B; --amber:#E3A94B; --tint:#F5DDBD; --tint-2:#FBEBD3; --rust:#8A3410;
+  --radius:14px; --shadow:0 1px 2px rgba(59,42,28,.08),0 6px 18px rgba(59,42,28,.06);
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7}
+a{color:var(--orange-ink)}
+:focus-visible{outline:3px solid var(--orange-2);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top nav */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,244,230,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.topbar nav{max-width:1080px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:thin}
+.topbar a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px}
+.topbar a:hover{background:var(--tint-2);color:var(--orange-ink)}
+.topbar a.active{background:var(--orange-btn);color:#fff}
+.progress{height:3px;background:transparent}
+.progress i{display:block;height:100%;width:0;background:var(--orange-2)}
+
+/* hero */
+.hero{background:var(--deep);color:#F3E7D0;padding:72px 20px 64px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,121,43,.35),rgba(217,121,43,0) 70%)}
+.hero .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.hero h1{font-family:var(--serif);font-size:clamp(32px,5.4vw,54px);line-height:1.12;margin:12px 0 18px;font-weight:700;color:#FFF6E4}
+.hero p{font-size:19px;max-width:700px;color:#E6D6B8;margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid rgba(243,231,208,.35);border-radius:999px;padding:4px 14px;font-size:14px;color:#F3E7D0}
+
+/* layout */
+main{max-width:860px;margin:0 auto;padding:12px 20px 60px}
+section{padding-top:48px}
+section>h2{font-family:var(--serif);font-size:clamp(26px,3.6vw,34px);line-height:1.2;margin:0 0 6px;color:var(--deep)}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-ink)}
+h3{font-family:var(--serif);font-size:22px;margin:34px 0 8px;color:var(--deep)}
+h4{margin:20px 0 6px;font-size:17px;color:var(--brown)}
+p{margin:0 0 14px}
+ul,ol{padding-left:22px;margin:0 0 14px}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sand);padding:1px 6px;border-radius:5px}
+pre{background:#2F2217;color:#F2E5CC;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:14px;line-height:1.55;margin:10px 0 14px}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+pre.out{background:var(--sand);color:var(--ink);border-left:4px solid var(--orange-2);border-radius:6px;margin-top:-6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:18px 0}
+.card>h4:first-child,.card>.ct{margin-top:0}
+.ct{font-weight:700;color:var(--deep);font-size:16px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:12px}
+.viz{border-top:5px solid var(--orange-2)}
+.viz .tag{display:inline-block;background:var(--tint);color:var(--rust);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 10px;border-radius:999px;margin-bottom:8px}
+.callout{background:var(--tint-2);border-left:5px solid var(--orange);border-radius:8px;padding:14px 18px;margin:18px 0}
+.callout b.h{display:block;color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.callout.note{background:var(--sand);border-left-color:var(--brown)}
+.callout.note b.h{color:var(--brown)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}body{font-size:16px}}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mini b{display:block;color:var(--deep);margin-bottom:2px}
+.mini .big{font-family:var(--serif);font-size:28px;color:var(--orange-ink);line-height:1.1}
+
+/* controls */
+button,.btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:999px;border:1.5px solid var(--orange-btn);background:var(--card);color:var(--orange-ink);padding:6px 16px}
+button:hover{background:var(--tint-2)}
+button[aria-pressed="true"],button.on{background:var(--orange-btn);color:#fff}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+label{font-size:14px;font-weight:600;color:var(--brown)}
+input[type=range]{width:100%;accent-color:var(--orange-btn)}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;margin-bottom:12px}
+.ctrl output{font-family:var(--mono);color:var(--orange-ink);font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.chk input{accent-color:var(--orange-btn);width:18px;height:18px}
+
+/* tables */
+.tw{overflow-x:auto;margin:10px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--sand);color:var(--deep);font-size:14px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--tint-2)}
+
+/* bars */
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bar .track{background:var(--sand);border-radius:6px;height:26px;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px;transition:width .35s}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+@media(max-width:560px){.bar{grid-template-columns:1fr;gap:2px}.bar .v{text-align:left}}
+
+/* calendar grid */
+.cal{display:grid;grid-template-columns:42px repeat(12,minmax(0,1fr));gap:3px;font-size:11px;max-width:620px}
+.cal .hd,.cal .yr{color:var(--muted);font-weight:700;text-align:center;line-height:20px}
+.cal .yr{text-align:right;padding-right:4px}
+.cal .c{height:20px;border-radius:4px;background:var(--sand);border:1px solid var(--line);text-align:center;line-height:17px;color:var(--brown);font-size:11px}
+.cal .c.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange);color:var(--rust)}
+.cal .c.absent{background:transparent;border:1.5px dashed var(--rust);color:var(--rust);font-weight:700}
+.cal .c.blank{visibility:hidden}
+.cal .cnt{height:46px;display:flex;align-items:flex-end;justify-content:center}
+.cal .cnt i{display:block;width:100%;background:var(--orange);border-radius:3px 3px 0 0;position:relative}
+.cal .cnt i.top{background:var(--rust)}
+.cal .cn{text-align:center;font-weight:700;color:var(--deep);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:10px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:14px;border-radius:3px;background:var(--sand);border:1px solid var(--line)}
+.sw.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.sw.absent{background:transparent;border:1.5px dashed var(--rust)}
+
+svg text{font-family:var(--sans)}
+svg{max-width:100%;height:auto;display:block}
+.mrow{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+.mrow div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:8px 0;font-size:13px;font-weight:700;background:var(--sand);color:var(--brown)}
+.mrow .dip{background:var(--card);border:2px dashed var(--brown)}
+.mrow .peak{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+
+/* steps */
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.steps button{border-radius:10px}
+.stepbody{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+
+/* quiz */
+.quiz{border-left:6px solid var(--orange)}
+.quiz .q{font-weight:600;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;margin:6px 0;font-weight:500}
+.opt:hover{border-color:var(--orange-2);background:var(--tint-2)}
+.opt.right{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+.opt.wrong{border:2px dashed var(--rust);background:var(--paper)}
+.quiz .fb{display:none;margin-top:10px;background:var(--sand);border-radius:8px;padding:10px 14px;font-size:15px}
+.quiz .fb.show{display:block}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:0}
+summary{cursor:pointer;padding:12px 18px;font-weight:700;color:var(--deep);list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--orange-ink);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details .dbody{padding:0 18px 14px}
+details pre{margin-top:0}
+
+footer{background:var(--deep);color:#D9C7A4;text-align:center;padding:28px 20px;font-size:14px}
+
+.chw{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--deep);color:#F3E7D0;font-size:12.5px;line-height:1.45;padding:6px 10px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+.eq{font-family:var(--serif);font-size:19px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0;overflow-x:auto;text-align:center}
+.eq small{font-size:14px;color:var(--muted);font-family:var(--sans)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:6px 0 4px}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.faq{border-left:5px solid var(--amber);background:var(--card);border-radius:8px;padding:12px 16px;margin:16px 0}
+.faq b{color:var(--rust)}
+.cal .c.test{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.cal .c.tr{background:var(--sand)}
+.chips2{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips2 button{font-size:13px;padding:4px 12px}
+.chips2 button[aria-pressed="true"]{background:var(--orange-btn);color:#fff}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0}
+.kpi div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.kpi b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi span{font-family:var(--serif);font-size:24px;color:var(--orange-ink)}
+input[type=number]{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+tr.best td{background:var(--tint)}
+select{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+
+</style>
+</head>
+<body>
+<div class="topbar" role="banner">
+  <nav aria-label="Sections">
+    <a href="#open">Three questions</a><a href="#holt">Holt</a><a href="#hw">Holt-Winters</a><a href="#pair">Additive vs multiplicative</a><a href="#target">5% target</a><a href="#range">Range forecast</a><a href="#ets">ETS &amp; AIC</a><a href="#recap">Recap</a>
+  </nav>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Time Series &amp; Recommender System · Class 4</div>
+    <h1>Smooth Operators - Exponential Smoothing from Flat Lines to Holt-Winters</h1>
+    <p>Build exponential smoothing models that carry a trend and a yearly pattern, choose between additive and multiplicative versions, reach a stated accuracy target, and deliver a forecast as a range and not as a single number.</p>
+    <div class="chips"><span class="chip">Case: Lanternly</span><span class="chip">144 months · Jan 2012 – Dec 2023</span><span class="chip">Python · statsmodels ETS</span></div>
+  </div>
+</header>
+
+<main>
+<section id="intro" style="padding-top:36px">
+  <div class="callout note"><b class="h">About the data</b>Lanternly is an online store selling festive lanterns and decorations. The series <code>Units</code> (lanterns and decorations sold per month) is clean: no gaps and no anomalies, using the steps from Class 1. The data is simulated for teaching; the numbers are not real figures of any company. Train = 2012–2022 (132 months), test = 2023. Smoothing recursions on this page run live in your browser; parameters that need an optimiser (the "estimated" values) and the ETS results come from the class's own statsmodels code.</div>
+</section>
+
+<!-- COLD OPEN -->
+<section id="open">
+  <div class="kicker">1 · Cold open</div>
+  <h2>The manager's three questions</h2>
+  <p>Orders for stock go to the factory months ahead, and the warehouse hires temporary staff for the festive season. The operations manager has three questions:</p>
+  <div class="grid3">
+    <div class="mini"><b>1 · Patterns</b>"Does your forecast understand how our business moves, the growth and the festive peak?"</div>
+    <div class="mini"><b>2 · Accuracy</b>"Will it be within 5% error on the last year of data?"</div>
+    <div class="mini"><b>3 · Range</b>"Can you also give me a lowest and a highest number, so purchasing knows how much to order and how much to keep as a buffer?"</div>
+  </div>
+  <p style="margin-top:14px">These three questions are the whole story of this class and the next one. Look at the data first.</p>
+  <div class="card viz"><span class="tag">Visualizer · the series</span>
+    <div id="o_chart"></div>
+    <div class="ct" style="margin-top:12px">Yearly totals and growth</div>
+    <div id="o_yr"></div>
+    <p class="sub" style="margin:6px 0 0">The series climbs from about 650 units a month in 2012 to more than 4,000 in the peak months of 2023, and every year has the same shape: low in the first half, a peak in October and November. Growth is usually 10% to 14%, but <b>2022 grew only 4.8%</b>. Keep that year in mind, it comes back later.</p>
+  </div>
+  <p>The tools from Class 3 give the starting scores: split by time (train 2012–2022, test the last 12 months, 2023) and compare against baselines.</p>
+  <div class="card viz"><span class="tag">Visualizer · Class 3 tools on Lanternly</span>
+    <div id="b_chart"></div><div id="b_lg"></div>
+    <div class="kpi" id="b_kpi"></div>
+    <p class="sub" style="margin:6px 0 0">Seasonal naive has the right shape but is one year behind a business that grows 10% to 14% a year. SES has no shape at all: its α is 1.00, so it simply repeats December. Neither is near the 5% asked for.</p>
+  </div>
+  <div class="faq"><b>What would a model need to know to fix both problems?</b><br>The growth (a trend) and the yearly shape (seasonality), and it should still learn them the way SES does: by giving more weight to recent data. That is Holt's method, and then Holt-Winters.</div>
+  <h3>The plan</h3>
+  <div class="grid2">
+    <div class="mini"><b>1</b> Add a trend to SES: Holt's method.</div>
+    <div class="mini"><b>2</b> Add seasonality: Holt-Winters, with its three smoothing parameters.</div>
+    <div class="mini"><b>3</b> Choose additive or multiplicative, and see what a wrong pairing costs.</div>
+    <div class="mini"><b>4</b> Check the 5% target honestly.</div>
+    <div class="mini"><b>5</b> Turn the point forecast into a range, and let the computer choose the model with AIC.</div>
+  </div>
+</section>
+
+<!-- HOLT -->
+<section id="holt">
+  <div class="kicker">2 · Level and trend</div>
+  <h2>Holt's method</h2>
+  <p>SES keeps one number, the level ℓ<sub>t</sub>: where the series is "now". Holt's method keeps a second number, the trend 𝑏<sub>t</sub>: how much the level moves per month. The forecast is the level plus ℎ steps of trend.</p>
+  <div class="eq">ŷ<sub>t+h|t</sub> = ℓ<sub>t</sub> + h·b<sub>t</sub><br>
+    ℓ<sub>t</sub> = α·y<sub>t</sub> + (1−α)(ℓ<sub>t−1</sub> + b<sub>t−1</sub>)<br>
+    b<sub>t</sub> = β*(ℓ<sub>t</sub> − ℓ<sub>t−1</sub>) + (1−β*)·b<sub>t−1</sub></div>
+  <p>The term ℓ<sub>t−1</sub> + b<sub>t−1</sub> is what the model expected the new level to be. The trend is a smoothed average of the recent changes in level, so it uses exponentially decaying weights as well. The level depends on the trend and the trend on the level: a recursion, which is why the model is also called <b>double exponential smoothing</b> (two smoothed quantities, each with its own decaying weights).</p>
+  <p>Think of a car on a highway. The level is the position, the trend is the speed. Every minute you get a new GPS reading. You do not jump to the GPS position (α=1) and you do not ignore it (α=0): you blend it with where you expected the car to be, and update your speed estimate the same way. The forecast is "position plus speed times the minutes ahead".</p>
+  <div class="tw"><table>
+    <tr><th>Symbol</th><th>Name</th><th>Range</th><th>Meaning</th></tr>
+    <tr><td>ℓ<sub>t</sub></td><td>level</td><td>any number</td><td>the smoothed value of the series at time 𝑡</td></tr>
+    <tr><td>b<sub>t</sub></td><td>trend</td><td>any number</td><td>the smoothed change per month</td></tr>
+    <tr><td>α</td><td>smoothing level</td><td>0 to 1</td><td>how fast the level follows new data</td></tr>
+    <tr><td>β*</td><td>smoothing trend</td><td>0 to 1</td><td>how fast the trend follows new changes in level</td></tr>
+  </table></div>
+  <p>Statsmodels calls the two parameters <code>smoothing_level</code> and <code>smoothing_trend</code>.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · Holt lab</span>
+    <div class="sub">The recursion runs over the 2012–2022 training data in your browser, starting from the statsmodels initial level (≈ 630) and trend (≈ 20.5 units per month).</div>
+    <div class="ctrl">
+      <div><label for="h_a">α (level): <output id="h_ao"></output></label><input id="h_a" type="range" min="0" max="1" step="0.01" value="1"></div>
+      <div><label for="h_b">β* (trend): <output id="h_bo"></output></label><input id="h_b" type="range" min="0" max="1" step="0.01" value="0"></div>
+    </div>
+    <div class="btnrow"><button id="h_est">Estimated by statsmodels (α≈1, β*=0)</button><button id="h_mid">α = 0.5, β* = 0.2</button></div>
+    <div id="h_chart"></div><div id="h_lg"></div>
+    <div class="kpi" id="h_kpi" aria-live="polite"></div>
+    <p id="h_msg" class="sub" style="margin:0"></p>
+  </div>
+  <p>The model estimates its own parameters from the training data by minimising the squared one-step errors. It chooses α≈1 and β*=0, both on the edge of the allowed range. With α=1 the level jumps to every new observation; with β*=0 the trend never changes after its starting value. A value of exactly 0 or 1 is not a bug: the optimiser stopped at the boundary because the yearly swing is much larger than the trend, so the level has to chase the data. That is a clue that something is still missing, and Holt-Winters fixes it.</p>
+  <p>The equations are exactly the model: a short loop with the two update rules reproduces statsmodels' fitted values (<code>np.allclose</code> is True), including the final level of 3,337 and trend of 20.5.</p>
+<pre><code>for obs in train.values:
+    one_step.append(level + slope)                     # forecast made before seeing obs
+    new_level = a * obs + (1 - a) * (level + slope)    # level update
+    slope = b * (new_level - level) + (1 - b) * slope  # trend update
+    level = new_level</code></pre>
+  <p>The forecast is a straight line rising by exactly 20.5 units every month, as ℓ<sub>T</sub> + h·b<sub>T</sub> says. But its MAPE is <b>30.8%</b>, slightly worse than SES (29.4%): the line starts from the December level, a month already high, and cannot rise and fall with the year. Adding a trend alone did not help because the festive swing is far bigger than the growth.</p>
+  <div class="faq"><b>Is the trend useless then?</b><br>No. It helps when the seasonality is not in the way. On yearly totals, each year is one number and the seasonality has been added up and removed:</div>
+  <div class="card viz"><span class="tag">Visualizer · on yearly totals</span>
+    <div class="sub">Forecast of the 2023 total from 2012–2022 totals.</div>
+    <div id="y_bars"></div>
+    <p class="sub" style="margin:6px 0 0">SES is off by 11.0% because it predicts "the same as last year"; Holt is off by only 5.0% because it carries the growth. Holt's method does its job: it captures the trend. What it cannot do is the monthly shape.</p>
+  </div>
+  <div class="card quiz" data-q="0"></div>
+</section>
+
+<!-- HW -->
+<section id="hw">
+  <div class="kicker">3 · Level, trend and seasonality</div>
+  <h2>Holt-Winters</h2>
+  <p>Now add a third number, the seasonal index 𝑠<sub>t</sub>, one for each position in the year. With 𝑚 = the number of seasons in a cycle (12 for monthly data with a yearly pattern), the <b>additive</b> Holt-Winters model is:</p>
+  <div class="eq">ŷ<sub>t+h|t</sub> = ℓ<sub>t</sub> + h·b<sub>t</sub> + s<sub>t+h−m</sub><br>
+    ℓ<sub>t</sub> = α(y<sub>t</sub> − s<sub>t−m</sub>) + (1−α)(ℓ<sub>t−1</sub> + b<sub>t−1</sub>)<br>
+    b<sub>t</sub> = β*(ℓ<sub>t</sub> − ℓ<sub>t−1</sub>) + (1−β*)·b<sub>t−1</sub><br>
+    s<sub>t</sub> = γ(y<sub>t</sub> − ℓ<sub>t−1</sub> − b<sub>t−1</sub>) + (1−γ)·s<sub>t−m</sub></div>
+  <p>Read the level equation: before the level is updated, the seasonal effect is removed from the new observation. Read the seasonal equation: what is left of the observation after removing level and trend is new evidence about this month, blended with last year's index using the weight γ.</p>
+  <p>The shop keeps three notebooks. The first says where sales are now, the second how fast they are growing, and the third has twelve lines, one per month, saying how much above or below normal that month usually is. Every month the manager reads the new number and edits one line in each of the first two notebooks and the one line of the third for that month. A forecast is: where we are, plus the growth over the months ahead, plus the notebook line for the month being forecast.</p>
+  <div class="tw"><table>
+    <tr><th>Parameter</th><th>Controls</th><th>Large value means</th></tr>
+    <tr><td>α</td><td>level</td><td>the level reacts quickly to the latest month</td></tr>
+    <tr><td>β*</td><td>trend</td><td>the growth rate is revised often</td></tr>
+    <tr><td>γ</td><td>seasonal indices</td><td>the monthly shape is revised often, so last year counts much more than older years</td></tr>
+  </table></div>
+
+  <div class="card viz"><span class="tag">Visualizer · Holt-Winters lab</span>
+    <div class="sub">Choose the seasonal form and move the three weights. Initial values stay at the statsmodels estimates for that form.</div>
+    <div class="btnrow" id="w_type" role="group" aria-label="Seasonal form"><button data-t="add" aria-pressed="true">Additive season</button><button data-t="mul" aria-pressed="false">Multiplicative season</button></div>
+    <div class="ctrl">
+      <div><label for="w_a">α (level): <output id="w_ao"></output></label><input id="w_a" type="range" min="0" max="1" step="0.001"></div>
+      <div><label for="w_b">β* (trend): <output id="w_bo"></output></label><input id="w_b" type="range" min="0" max="1" step="0.001"></div>
+      <div><label for="w_g">γ (season): <output id="w_go"></output></label><input id="w_g" type="range" min="0" max="1" step="0.001"></div>
+    </div>
+    <div class="btnrow"><button id="w_est">Reset to statsmodels estimates</button></div>
+    <div class="ct">Forecast of 2023</div><div id="w_chart"></div><div id="w_lg"></div>
+    <div class="kpi" id="w_kpi" aria-live="polite"></div>
+    <div class="ct" style="margin-top:10px">What the model has learned (state at the end of 2022)</div>
+    <div class="grid2"><div><div class="sub" style="margin:0">Seasonal index per month</div><div id="w_idx"></div></div><div><div class="sub" style="margin:0">Level over time</div><div id="w_lev"></div></div></div>
+    <p id="w_msg" class="sub" style="margin:6px 0 0"></p>
+    <p class="sub" style="margin:6px 0 0">Note: the lab applies the four equations literally. For the additive fit, statsmodels' own forecast (MAPE 4.42%, quoted in the text) differs in a single month: for December 2023 it uses the previous December index (443) and not the one just updated (622), so the lab shows a slightly lower MAPE. All other months and the multiplicative fit (3.29%) match.</p>
+  </div>
+  <p>With the additive estimate, α≈0.12, β*=0 and γ≈0.80. The level now reacts slowly, because the seasonal index takes care of the swings. The seasonal weight γ is large: the model keeps revising the monthly shape quickly. <b>That number is a warning sign</b> that returns in the next section. β* is exactly 0 again because the growth in units per month is stable over the 11 training years, so the optimiser sees no gain in revising it; the level equation carries the real changes.</p>
+  <p>The four equations are exactly the model: rebuilding the fitted values by hand matches statsmodels to about 10<sup>−12</sup>. The learned components agree with Class 2: the level climbs steadily, the trend is a flat line at about 14 units per month, and the seasonal component is a repeating wave. Read the indices as "how far this month sits from the trend line": November is +1,281 units above it and January −513 below it, but now they are updated month by month, with recent data counting most.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · anatomy of a forecast</span>
+    <div class="ct">Forecast = level + h × trend + seasonal index</div>
+    <div class="ctrl"><div><label for="a_m">Forecast month: <output id="a_mo"></output></label><input id="a_m" type="range" min="1" max="12" value="11"></div></div>
+    <div id="a_out" aria-live="polite"></div>
+    <p class="sub" style="margin:6px 0 0">Uses the additive model with the statsmodels estimates (final level, final trend and last year's index for that month). For November, 11 steps after the last observed month, that is the last level, eleven months of growth and the November index.</p>
+  </div>
+  <p>The forecast now rises and falls with the year and peaks in November like the actual data. The MAPE drops from 30.8% (Holt) to <b>4.4%</b>, and the MAE from about 789 to 141 units. That is already under the 5% target, but the model uses an additive seasonal term, and the data may prefer another form.</p>
+  <details><summary>Practice · Rebuild Holt-Winters by hand</summary><div class="dbody">
+    <p>Ask an AI assistant to write <code>holt_winters_additive(y, alpha, beta, gamma, level0, trend0, seasons0)</code> returning the one-step fitted values from the equations above. Call it with the values in <code>hw.params</code> and compare with <code>hw.fittedvalues</code> using <code>np.allclose</code> (the maximum difference should be about 10<sup>−12</sup>; if larger, find which equation or initial value is wrong). Use it to produce the first forecast of 2023, ℓ<sub>T</sub> + b<sub>T</sub> + s<sub>T+1−12</sub>, and compare it with <code>hw_add_fc.iloc[0]</code> (2,199 units).</p>
+    <p style="margin:0"><b>Reflect:</b> if you set γ = 0, what does the model assume about the monthly shape, and when would that be reasonable?</p></div></details>
+  <div class="card quiz" data-q="1"></div>
+</section>
+
+<!-- PAIR -->
+<section id="pair">
+  <div class="kicker">4 · The pairing</div>
+  <h2>Additive vs multiplicative, and what goes wrong with a bad pairing</h2>
+  <p>The trend and the seasonal term can each be additive or multiplicative. For a multiplicative seasonal term:</p>
+  <div class="eq">ŷ<sub>t+h|t</sub> = (ℓ<sub>t</sub> + h·b<sub>t</sub>) · s<sub>t+h−m</sub><br>
+    ℓ<sub>t</sub> = α · y<sub>t</sub> / s<sub>t−m</sub> + (1−α)(ℓ<sub>t−1</sub> + b<sub>t−1</sub>), &nbsp; s<sub>t</sub> = γ · y<sub>t</sub> / (ℓ<sub>t−1</sub> + b<sub>t−1</sub>) + (1−γ)·s<sub>t−m</sub></div>
+  <p>The seasonal index is now a ratio around 1, and the trend equation stays the same. A multiplicative trend replaces ℓ<sub>t</sub> + h·b<sub>t</sub> by ℓ<sub>t</sub>·b<sub>t</sub><sup>h</sup>, where 𝑏<sub>t</sub> is a growth factor such as 1.01 for 1% growth per month.</p>
+  <p>An additive model says "every November sells 1,281 units more than normal". A multiplicative model says "every November sells 35% more than normal". If the shop is three times bigger than ten years ago, which sentence is more believable? The answer is in the data: does the size of the seasonal swing, in units, stay the same or grow with the level?</p>
+  <div class="card viz"><span class="tag">Visualizer · how the swing behaves</span>
+    <div class="btnrow" id="s_btns" role="group" aria-label="Measure"><button data-k="d" aria-pressed="true">Peak − trough (units)</button><button data-k="r" aria-pressed="false">Peak ÷ trough</button></div>
+    <div id="s_chart"></div>
+    <p id="s_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <p>From 2012 to 2023 the swing between the best and worst month grows from 643 units to 2,007 units, about three times larger, while the ratio of peak to trough stays close to 2. That is the signature of multiplicative seasonality: the yearly shape is a percentage of the level, not a fixed number of units.</p>
+
+  <h3>Fit all four pairings</h3>
+  <div class="card viz"><span class="tag">Visualizer · four pairings, one training set</span>
+    <div class="tw"><table id="p_tab"></table></div>
+    <div class="ct">γ needed by each pairing</div><div id="p_g"></div>
+    <p class="sub" style="margin:6px 0 0">Look at γ and the training SSE before the test error. With additive seasonality the model needs γ ≈ 0.80 (or 0.78): it must rewrite the monthly shape almost every year to keep up with the growing swing, and its squared training error is about 1.32 million. With multiplicative seasonality γ falls to 0 — one stable shape of percentages is enough — and the training error is about 0.59 million, less than half. <b>A bad pairing shows up in the parameters before it shows up in the forecast.</b></p>
+  </div>
+  <p>On the 2023 test year all four pairings are below 5%, so one year does not separate them well. Testing on three years, always training on the past only:</p>
+  <div class="card viz"><span class="tag">Visualizer · rolling test years</span>
+    <div class="ctrl"><div><label for="r_t">Target: MAPE ≤ <output id="r_to"></output>%</label><input id="r_t" type="range" min="1" max="10" step="0.5" value="5"></div></div>
+    <div class="tw"><table id="r_tab"></table></div>
+    <p class="sub" style="margin:6px 0 0">Averaged over the three years, additive/additive scores 6.21%, additive trend with multiplicative season 4.25% and multiplicative/multiplicative 4.16%: the multiplicative seasonal term wins in every year. <b>2022 is hard for every pairing</b> (6.8% to 9.6%): growth fell to 4.8% that year, and no smoothing model could know in advance that growth would slow.</p>
+  </div>
+  <p>There is no universal rule for the pairing; the data decides, by looking at how the swing behaves. There is also a hard failure for the multiplicative terms: they need strictly positive data. Setting one training month to zero makes statsmodels raise <code>ValueError: endog must be strictly positive when using multiplicative trend or seasonal components</code>. A multiplicative seasonal term divides by the data, so it refuses to run when a month is zero; use the additive form, or fix the data.</p>
+  <div class="card viz"><span class="tag">Visualizer · what a bad pairing leaves behind</span>
+    <div class="sub">Training residuals as a percentage of sales: spread in the first four years vs the last four years.</div>
+    <div id="rp"></div>
+  </div>
+  <div class="grid3">
+    <div class="mini"><b>Additive on a growing series</b>Under-represents the swing in later years, so the model needs a high γ and still misses.</div>
+    <div class="mini"><b>Multiplicative on a constant swing</b>Would do the opposite.</div>
+    <div class="mini"><b>Zeros or negatives</b>Multiplicative terms cannot handle them.</div>
+  </div>
+  <div class="faq"><b>A series grows, but its yearly swing stays about 500 units every year. Which seasonal type to start with?</b><br>Additive, because the swing does not grow with the level.</div>
+  <div class="card quiz" data-q="2"></div>
+</section>
+
+<!-- TARGET -->
+<section id="target">
+  <div class="kicker">5 · Accuracy</div>
+  <h2>Reaching the MAPE ≤ 5% target</h2>
+  <p>The second question is a number: a MAPE of at most 5% on the last year. The working model keeps it simple: additive trend with multiplicative season. Every model goes on one scoreboard with the same function and the same test year.</p>
+  <div class="card viz"><span class="tag">Visualizer · the scoreboard</span>
+    <div class="ctrl"><div><label for="t_v">Target MAPE: <output id="t_vo"></output>%</label><input id="t_v" type="range" min="1" max="12" step="0.5" value="5"></div></div>
+    <div id="t_chart"></div><div id="t_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></div>
+  </div>
+  <p>Three models meet the target on 2023: HW with additive trend and multiplicative season (3.29%), the same with a multiplicative trend (2.69%) and the additive version (4.42%). Seasonal naive (10.9%), SES and Holt are far above 5%. The working model's MAE is 109 units, small against average monthly sales of about 2,900 in 2023.</p>
+  <p>A single MAPE hides the shape of the errors. Look month by month, and check the sign:</p>
+  <div class="card viz"><span class="tag">Visualizer · where the working model misses</span>
+    <div id="m_chart"></div>
+    <div class="kpi" id="m_kpi"></div>
+    <p class="sub" style="margin:6px 0 0">Three months are above 5%: September (7.4%), October (10.5%) and December (6.5%), all in the run-up to and inside the festive season, while November is almost perfect (0.1%). The signed error is positive, so the model <b>under-forecasts</b>, by about 97 units a month, because 2023 grew faster (12.3%) than the slow 2022 that the model had just learned from.</p>
+  </div>
+  <p>The three-year test gives the honest answer: the target was met in <b>2 of the 3 years</b>, and the year that missed (2022, 6.8%) is the year growth slowed from 13.9% to 4.8%. A forecaster should say: "Expect about 3% to 4% in a normal year, and expect a miss when the growth rate changes suddenly".</p>
+  <div class="callout"><b class="h">Important</b>A target is a statement about the future, and one test year is one draw. Report the score on several test years, and report the months where the model is weakest, as the manager prepares for those months. This is why the third question, a range, matters: a point forecast cannot say how wrong it might be.</div>
+  <div class="faq"><b>Could we tune α, β* and γ on the test year until the MAPE is below 3%?</b><br>No. That would be using the answer to choose the question, the same leak as in Class 3. The parameters are estimated on the training years only; the test year is touched only to score.</div>
+  <details><summary>Practice · Audit a rolling-origin evaluation</summary><div class="dbody">
+    <p>Ask an AI assistant for a function that evaluates Holt-Winters (additive trend, multiplicative season, period 12) on test years 2021, 2022 and 2023, training only on data before each year. Read the code for any line that touches data from the test year or later while fitting, then run it and compare with the add/mul row above (2.65, 6.80 and 3.29). Extend it to add 2020 and see whether the model still beats seasonal naive.</p>
+    <p style="margin:0"><b>Reflect:</b> why is the average over three years a more honest answer to "will we be within 5%?" than the single 2023 score?</p></div></details>
+</section>
+
+<!-- RANGE -->
+<section id="range">
+  <div class="kicker">6 · Uncertainty</div>
+  <h2>Confidence intervals: delivering a range forecast</h2>
+  <p>A forecast of 4,177 units for November is a promise nobody can keep. A better statement is "between 3,851 and 4,499 units, with 95% confidence". The pair (L, U) is a <b>prediction interval</b> (often called a confidence interval in forecasting), and its job is to tell the user how uncertain the forecast is. For a model with normal errors:</p>
+  <div class="eq">ŷ<sub>T+h</sub> ± z<sub>1−α/2</sub> · σ̂<sub>h</sub></div>
+  <p>σ̂<sub>h</sub> is the standard deviation of the forecast error ℎ steps ahead, and α is the significance level: the interval has confidence 1−α. For α = 0.05 it is a 95% interval and z = 1.96.</p>
+  <div class="faq"><b>Is this α the same as the smoothing level α?</b><br>No, only the same letter. The smoothing level is a model parameter between 0 and 1 that controls memory. The significance level is a choice about how sure we want to be. In code: <code>smoothing_level</code> vs the <code>alpha</code> argument of the interval function.</div>
+  <p>Two facts: higher confidence means a wider interval (larger 𝑧), and the interval gets wider with the horizon (larger σ̂<sub>h</sub>), because errors accumulate. <code>ExponentialSmoothing</code> gives only point forecasts; <code>ETSModel</code> describes the same family of models but also the error, so the library can work out σ̂<sub>h</sub>. We start with <b>ETS(A,A,M)</b>: additive error, additive trend, multiplicative season. It has a residual standard deviation of about 70 units and a 2023 MAPE of 3.32%, very close to the Holt-Winters model.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · the hand formula</span>
+    <div class="sub">For January 2023: forecast 2,213.2, σ = 70.3 units.</div>
+    <div class="ctrl"><div><label for="z_c">Confidence: <output id="z_co"></output>%</label><input id="z_c" type="range" min="50" max="99.5" step="0.5" value="95"></div></div>
+    <div class="btnrow"><button data-c="80">80%</button><button data-c="95">95%</button><button data-c="99">99%</button></div>
+    <div id="z_out" aria-live="polite"></div>
+    <p class="sub" style="margin:6px 0 0">At 95% the hand formula gives 2,075 to 2,351 and the library gives 2,073 to 2,351: a tiny gap, simulation noise plus the effect of the multiplicative season. A prediction interval is a forecast plus and minus a multiple of the typical error: 1.28 for 80%, 1.96 for 95%, 2.58 for 99%. For this model statsmodels finds the interval by simulation (5,000 futures, fixed seed).</p>
+  </div>
+
+  <div class="card viz"><span class="tag">Visualizer · range forecast for 2023</span>
+    <div class="btnrow" id="c_btns" role="group" aria-label="Confidence level"><button data-c="0.2" aria-pressed="false">80%</button><button data-c="0.05" aria-pressed="true">95%</button><button data-c="0.01" aria-pressed="false">99%</button></div>
+    <div id="c_chart"></div><div id="c_lg"></div>
+    <div class="tw"><table id="c_tab"></table></div>
+    <p class="sub" style="margin:6px 0 0">The band is clearly wider for the large festive months than for quiet months, and wider in month 12 than in month 1 (95%: 277 vs 575 units), because uncertainty grows with the horizon. As for coverage, the 80% interval holds 9 of 12 actuals (75%); the 95% and 99% hold 11. With only 12 test points the share inside cannot be expected to equal the nominal value exactly.</p>
+  </div>
+  <div class="faq"><b>If we want a narrower band, what can we change?</b><br>Either accept a lower confidence, or build a better model. A smaller 𝑧 is free but gives up the promise: a narrower interval contains the actual value less often.</div>
+  <div class="callout"><b class="h">Important</b>The interval is not a worst case. A 95% interval is expected to miss in about 1 month out of 20. For stock decisions the manager chooses the confidence that matches the cost of a stock-out against the cost of extra stock.</div>
+
+  <h3>The table the manager asked for</h3>
+  <div class="card viz"><span class="tag">Visualizer · purchasing plan</span>
+    <div class="tw"><table id="pl_tab"></table></div>
+    <p class="sub" style="margin:0">Plan stock for the "Forecast" column, and keep the gap up to "High" as the buffer for the festive months. For November 2023 the range is about 3,851 to 4,499 around a forecast of 4,177, and the actual was 4,162. The manager now has all three answers: the model understands trend and season, the 2023 error is about 3%, and every month has a range.</p>
+  </div>
+  <details><summary>Your turn · 80% interval and its coverage</summary><div class="dbody">
+    <p>Produce the 80% interval with <code>pred.summary_frame(alpha=0.20)</code> and count how many of the 12 actuals fall inside:</p>
+<pre><code>frame80 = pred.summary_frame(alpha=0.20)
+inside = int(((test >= frame80["pi_lower"]) & (test <= frame80["pi_upper"])).sum())</code></pre>
+    <p style="margin:0">Result: 9 of 12 (75%) against a nominal 80%, average width 284 units: close to the promise, which is as much as 12 points can say.</p></div></details>
+  <div class="card quiz" data-q="3"></div>
+</section>
+
+<!-- ETS -->
+<section id="ets">
+  <div class="kicker">7 · Automatic choice</div>
+  <h2>Automatic model choice with ETSModel and AIC</h2>
+  <p>So far the pairing was chosen by looking at the swing. With <code>ETSModel</code> the computer can compare all the options. Every exponential smoothing model is named by three letters: <b>E</b>rror, <b>T</b>rend and <b>S</b>easonal, each N (none), A (additive) or M (multiplicative). A trend can also be <b>damped</b> (Ad), which flattens the slope over time. ETS(A,N,N) is SES, ETS(A,A,N) is Holt, and ETS(A,A,M) is the model of the last section.</p>
+  <div class="eq">AIC = 2k − 2 ln L̂</div>
+  <p>L̂ is the maximised likelihood (how well the model explains the training data) and 𝑘 the number of estimated parameters, including the 12 starting seasonal values. The first term punishes complexity and the second rewards fit. <b>Lower is better.</b> For ETS(A,A,M): log-likelihood −748.76 and 𝑘 = 18, so 2·18 − 2·(−748.76) = <b>1,533.52</b>, exactly the library's AIC. The 18 parameters are three smoothing values, the starting level and trend, twelve starting seasonal values, and the error variance.</p>
+
+  <div class="card viz"><span class="tag">Visualizer · name a model</span>
+    <div class="ctrl">
+      <div><label for="n_e">Error</label><select id="n_e"><option value="A">A · additive</option><option value="M" selected>M · multiplicative</option></select></div>
+      <div><label for="n_t">Trend</label><select id="n_t"><option value="N">N · none</option><option value="A" selected>A · additive</option><option value="M">M · multiplicative</option></select></div>
+      <div><label for="n_d">Damped</label><select id="n_d"><option value="">no</option><option value="d">yes (d)</option></select></div>
+      <div><label for="n_s">Seasonal</label><select id="n_s"><option value="N">N · none</option><option value="A">A · additive</option><option value="M" selected>M · multiplicative</option></select></div>
+    </div>
+    <div class="kpi" id="n_out" aria-live="polite"></div>
+    <p id="n_msg" class="sub" style="margin:0"></p>
+  </div>
+
+  <p>Thirty models were fitted on the training data (2 error types × trend options, damped or not × 3 seasonal options) and ranked by AIC.</p>
+  <div class="card viz"><span class="tag">Visualizer · AIC vs test MAPE</span>
+    <div id="e_scatter"></div>
+    <div class="lg"><span><svg width="14" height="14"><circle cx="7" cy="7" r="5.5" fill="#B8530F"/></svg>model with a seasonal part (20)</span><span><svg width="14" height="14"><path d="M7 1 L13 13 H1 Z" fill="#5B4330"/></svg>no seasonal part (10)</span><span><svg width="14" height="14"><circle cx="7" cy="7" r="5.5" fill="none" stroke="#8A3410" stroke-width="2.5"/></svg>lowest AIC</span></div>
+    <div class="btnrow"><button id="e_all" aria-pressed="false">Show all 30 rows</button></div>
+    <div class="tw"><table id="e_tab"></table></div>
+    <p class="sub" style="margin:0">The winner is <b>ETS(M,A,M)</b>: multiplicative error, additive trend, multiplicative season. It agrees with the by-hand finding that the swing is proportional to the level, and goes a step further: the noise is proportional to the level too (a 5% miss in a big month is bigger in units than in a small month). All ten models without a seasonal part sit in positions 20 to 30. The lowest AIC does not have the lowest test MAPE.</p>
+  </div>
+  <p>Among the 20 models with a seasonal part, the rank correlation between AIC and test MAPE is <b>0.55</b>: AIC points in the right general direction but does not predict the winner of one test year. That is expected: AIC judges fit on the training years with a complexity penalty, and a single test year of 12 points is noisy. The three worst models by AIC (ETS(A,A,N), ETS(A,Ad,N), ETS(A,Md,N)) all lack seasonality, with test MAPEs of 18% to 19%.</p>
+  <div class="callout"><b class="h">Important</b>AIC is a tool for shortlisting, not an oracle. Use it to throw away models with no seasonal part and to prefer simple ones among models with similar scores, then confirm on several test years as in Section 4. AIC values can only be compared between models fitted to the same data.</div>
+
+  <h3>The final range forecast</h3>
+  <div class="card viz"><span class="tag">Visualizer · two ranges compared</span>
+    <div class="btnrow" id="f_btns" role="group" aria-label="Model"><button data-m="aam" aria-pressed="false">ETS(A,A,M)</button><button data-m="mam" aria-pressed="true">ETS(M,A,M) — AIC winner</button></div>
+    <div id="f_chart"></div><div id="f_lg"></div>
+    <div class="tw"><table id="f_tab"></table></div>
+    <p class="sub" style="margin:0">ETS(M,A,M) gives a 2023 MAPE of 3.45%, a little higher than the 3.32% of ETS(A,A,M), and its 95% interval also holds 11 of 12 actuals. The difference is the band: with multiplicative error the noise is a percentage of the level and the model estimates a larger percentage, so its band is wider in every month — in January 334 vs 277 units, in November 864 vs 648. Both hold 11 of 12 actuals, so the wider band buys no extra coverage here, only a larger buffer. With one test year we cannot say which band is better calibrated: check coverage on several years before promising a band to purchasing.</p>
+  </div>
+  <p>The three questions are now answered. <b>Patterns:</b> a model with level, trend and a multiplicative yearly shape. <b>Accuracy:</b> about 3% on 2023, and under 5% in two of three test years. <b>Range:</b> a monthly low and high that widen with the size of the month and the horizon.</p>
+  <details><summary>Practice · Interrogate the AIC</summary><div class="dbody">
+    <p>Ask an AI assistant for three possible reasons why the lowest-AIC model did not have the lowest MAPE on the last 12 months, with Python to check each using <code>ranked</code>, <code>models</code> and <code>test</code>. At minimum recompute one model's AIC as <code>2 * m.df_model - 2 * m.llf</code> and compare it with <code>m.aic</code>, and check whether the three best-AIC models also rank well on the rolling-origin test. Add a column with the 2022 MAPE (train through 2021) for the top five models and see whether the winner changes.</p>
+    <p style="margin:0"><b>Reflect:</b> if two models differ in AIC by less than 2, which one would you ship, and why?</p></div></details>
+  <div class="card quiz" data-q="4"></div>
+</section>
+
+<section id="recap">
+  <div class="kicker">Recap</div>
+  <h2>Key takeaways</h2>
+  <ul>
+    <li><b>Holt's method</b> adds a trend to SES: the forecast is ℓ<sub>T</sub> + h·b<sub>T</sub>, a straight line. It fixes the growth but not the yearly shape, so on strongly seasonal data it can still score badly.</li>
+    <li><b>Holt-Winters</b> has three smoothing parameters: α for the level, β* for the trend and γ for the seasonal indices. Each is updated by the same idea: a weighted mix of new evidence and old belief.</li>
+    <li>The pairing can be additive or multiplicative. If the size of the swing grows with the level, use multiplicative seasonality. A bad pairing shows up as a high γ and a large training error, and multiplicative terms fail on zeros.</li>
+    <li>A target such as MAPE ≤ 5% should be checked on several test years and by month, not on a single score, and never tuned on the test year.</li>
+    <li>A prediction interval is the forecast ± z·σ̂<sub>h</sub>. Higher confidence gives a wider band, and a longer horizon gives a wider band. The interval's α is not the smoothing α.</li>
+    <li><b>ETSModel</b> names models by Error, Trend and Season, and AIC (2k − 2 ln L̂) ranks them on the training data. Use it to shortlist, then confirm on test years.</li>
+  </ul>
+  <h3>Common mistakes</h3>
+  <div class="grid2">
+    <div class="mini">Reading the best test MAPE of one year as proof that a model is the best.</div>
+    <div class="mini">Using a multiplicative seasonal term on data with zeros or negative values.</div>
+    <div class="mini">Confusing the significance level α of an interval with the smoothing level α.</div>
+    <div class="mini">Comparing AIC values of models fitted on different data.</div>
+    <div class="mini">Delivering only a point forecast to a manager who has to order stock.</div>
+    <div class="mini">Tuning smoothing parameters by looking at the test set.</div>
+  </div>
+  <div class="callout" style="margin-top:22px"><b class="h">Closing the first half of the Lanternly story</b>The manager has what was asked: a model that follows growth and the festive peak, a score of about 3% on the last year, and a monthly range. One question remains, and the 2022 miss pointed at it: what is left in the data after the model has taken out level, trend and season? If what is left is pure noise, the model is complete; if it still has structure, we can improve it. To answer this we need to know when a series is predictable by itself. In Class 5 we study stationarity and the memory of a series, and finish the Lanternly story.</div>
+</section>
+</main>
+
+<footer>Time Series &amp; Recommender System: Class 4 (Post-Read)</footer>
+
+<script>
+(function(){
+"use strict";
+const D={"units":[651,634,670,709,744,741,824,760,934,1149,1277,1046,685,728,817,779,901,855,925,945,1112,1447,1569,1381,936,906,1019,1035,1111,1069,1153,1182,1431,1623,1916,1556,1111,1081,1196,1219,1187,1232,1248,1348,1641,1938,2038,1690,1186,1105,1185,1303,1417,1363,1287,1462,1641,1990,2270,1667,1197,1225,1211,1428,1442,1439,1433,1582,1799,2131,2395,2004,1319,1326,1402,1512,1620,1478,1623,1813,1884,2262,2568,2191,1461,1507,1577,1655,1729,1817,1758,1744,2264,2588,2895,2558,1584,1595,1664,1810,1997,1997,2102,2084,2272,2982,3197,2758,1911,1856,2002,2080,2203,2083,2271,2423,2800,3284,3720,3019,2059,2079,1963,2101,2214,2101,2347,2583,2841,3503,3952,3337,2168,2258,2300,2360,2519,2440,2642,2820,3350,4175,4162,3717],"holt":{"a":0.9999999850988388,"b":0.0,"l0":630.4136868448943,"b0":20.504173963102467},"hw":{"a":0.11665813936758863,"b":0.0,"g":0.8045127053744893,"l0":792.2099239118454,"b0":14.430107408953333,"s0":[-167.6738345902226,-179.7041668507434,-144.45188435548687,-125.24734061017021,-85.4928345260856,-103.34408539374895,-26.891189967752375,-86.75158020108948,72.74949855836678,284.6419779354745,389.1024943425025,135.29463466065388]},"fit":[{"t":"add","s":"add","a":0.11665813936758863,"b":0.0,"g":0.8045127053744893,"sse":1323084.363343659,"mape":4.416971048013637},{"t":"add","s":"mul","a":0.31861689531478316,"b":0.0,"g":0.0,"sse":585126.4980388687,"mape":3.2898095720400957},{"t":"mul","s":"add","a":0.14599511597110554,"b":0.0,"g":0.7771986069125099,"sse":1333977.6848215337,"mape":2.979810586036702},{"t":"mul","s":"mul","a":0.3192681265263727,"b":0.0,"g":0.0,"sse":581621.3774639368,"mape":2.6934992599089265}],"roll":{"add/add":[4.637578522710905,9.587141841520413,4.416971048013637],"add/mul":[2.6479782309455486,6.80375961827659,3.2898095720400957],"mul/add":[3.7150226211181843,9.504599941119922,2.979810586036702],"mul/mul":[2.1572103380605463,7.623794088294746,2.6934992599089265]},"fc":{"HW add":[2198.6538220971365,2213.9954226697732,2147.704628149102,2299.3808685623017,2432.380831730677,2339.672830607158,2589.2446582599177,2810.920871674102,3080.368980308218,3712.9255047757147,4136.780348975538,3313.3593379804174],"Holt":[3357.5041834328526,3378.008357395955,3398.5125313590574,3419.0167053221603,3439.5208792852627,3460.025053248365,3480.5292272114675,3501.03340117457,3521.5375751376723,3542.0417491007747,3562.5459230638776,3583.05009702698],"SES":[3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214,3337.000009164214],"Seasonal naive":[2059,2079,1963,2101,2214,2101,2347,2583,2841,3503,3952,3337],"HW add/mul":[2189.055804256774,2174.615316937127,2247.3996662973004,2388.1993963684367,2522.540984696263,2451.4869203778376,2572.69080684106,2719.1642265296246,3101.025730701544,3737.8723373902994,4165.560809698829,3474.146121032814],"HW mul/mul":[2210.7394007148714,2203.9582475686007,2284.482652275188,2435.896601227377,2581.052315638974,2516.576985998163,2649.6337139368284,2809.06980521924,3211.3121440416535,3880.877359206735,4336.216716293131,3627.135504993097]},"ci":{"0.01":{"lo":[2028.5,1985.0,2044.6,2178.1,2286.1,2204.5,2308.6,2437.3,2778.4,3371.3,3756.5,3113.9],"hi":[2398.0,2374.3,2468.0,2627.2,2792.5,2712.2,2858.8,3021.8,3443.9,4143.5,4612.5,3868.5],"mean":[2213.2,2183.2,2256.3,2396.7,2531.2,2459.5,2580.3,2726.7,3109.1,3747.6,4176.5,3483.3],"inside":11,"avgw":569.0317863521743,"w1":369.4631820172781,"w12":754.6296487525251},"0.05":{"lo":[2073.3,2033.0,2097.8,2222.4,2349.3,2265.5,2378.2,2502.6,2867.2,3460.4,3850.5,3196.3],"hi":[2350.5,2331.0,2417.3,2576.1,2724.3,2660.3,2791.8,2946.0,3358.3,4037.4,4499.0,3770.9],"mean":[2213.2,2183.2,2256.3,2396.7,2531.2,2459.5,2580.3,2726.7,3109.1,3747.6,4176.5,3483.3],"inside":11,"avgw":430.54251708033615,"w1":277.1892070580666,"w12":574.6266244480407},"0.2":{"lo":[2120.7,2084.6,2151.3,2283.2,2412.6,2333.0,2447.1,2581.7,2945.4,3553.5,3960.9,3298.1],"hi":[2301.1,2281.5,2360.6,2515.3,2657.2,2593.8,2718.6,2872.3,3273.8,3941.3,4387.3,3673.2],"mean":[2213.2,2183.2,2256.3,2396.7,2531.2,2459.5,2580.3,2726.7,3109.1,3747.6,4176.5,3483.3],"inside":9,"avgw":283.66816696123493,"w1":180.36404711102887,"w12":375.13851000611567}},"ranked":[{"m":"ETS(M,A,M)","aic":1492.6140408006866,"k":18,"mape":3.4507499038583016},{"m":"ETS(M,M,M)","aic":1496.3589919210863,"k":18,"mape":3.129706320366864},{"m":"ETS(M,Md,M)","aic":1500.1825241104416,"k":19,"mape":3.358729589476208},{"m":"ETS(M,Ad,M)","aic":1502.0323096113614,"k":19,"mape":3.2581401750444847},{"m":"ETS(M,N,M)","aic":1521.3748040641901,"k":16,"mape":4.95700345299619},{"m":"ETS(A,Ad,M)","aic":1527.30508852328,"k":19,"mape":3.5981437920885364},{"m":"ETS(A,M,M)","aic":1531.432784498222,"k":18,"mape":2.764269680215861},{"m":"ETS(A,A,M)","aic":1533.518637879811,"k":18,"mape":3.3203556966213874},{"m":"ETS(A,Md,M)","aic":1540.041437531044,"k":19,"mape":3.3908754371388397},{"m":"ETS(A,N,M)","aic":1544.8718167099048,"k":16,"mape":6.159359333560011},{"m":"ETS(M,A,A)","aic":1583.338231219012,"k":18,"mape":4.056271454389437},{"m":"ETS(M,N,A)","aic":1590.188528458118,"k":16,"mape":4.315944982546265},{"m":"ETS(M,Ad,A)","aic":1625.3808864061166,"k":19,"mape":4.035876927859584},{"m":"ETS(M,Md,A)","aic":1627.7078593424658,"k":19,"mape":5.135877682158472},{"m":"ETS(A,A,A)","aic":1640.9525064297168,"k":18,"mape":4.4292673326719045},{"m":"ETS(A,N,A)","aic":1648.4884149955842,"k":16,"mape":4.008219700051167},{"m":"ETS(A,Ad,A)","aic":1746.5448067273658,"k":19,"mape":6.784140801042151},{"m":"ETS(A,Md,A)","aic":1752.2758706931972,"k":19,"mape":7.271821852653389},{"m":"ETS(A,M,A)","aic":1760.4014621149431,"k":18,"mape":3.165041614047178},{"m":"ETS(M,A,N)","aic":1806.3806724516312,"k":5,"mape":32.41116811500612},{"m":"ETS(M,N,N)","aic":1806.9280535740338,"k":3,"mape":29.38212680892711},{"m":"ETS(M,M,N)","aic":1808.7433242498996,"k":5,"mape":40.271235353237486},{"m":"ETS(M,Ad,N)","aic":1810.1928415350171,"k":6,"mape":29.6011575423488},{"m":"ETS(M,Md,N)","aic":1811.0847819413736,"k":6,"mape":30.239244085935685},{"m":"ETS(M,M,A)","aic":1836.3595410462544,"k":18,"mape":5.6498639023027355},{"m":"ETS(A,N,N)","aic":1878.3806980783188,"k":3,"mape":29.38212680892711},{"m":"ETS(A,M,N)","aic":1882.4296716590736,"k":5,"mape":29.35420787852574},{"m":"ETS(A,A,N)","aic":1960.9162640022616,"k":5,"mape":19.272235388940466},{"m":"ETS(A,Ad,N)","aic":1961.3367576557273,"k":6,"mape":19.15592543875063},{"m":"ETS(A,Md,N)","aic":1963.8507507290533,"k":6,"mape":18.503668454019774}],"rho":0.5488721804511278,"best":{"name":"ETS(M,A,M)","mean":[2190.5,2167.4,2285.1,2402.2,2537.8,2470.2,2579.1,2697.3,3109.7,3737.9,4149.0,3447.2],"lo":[2021.6,1996.6,2101.6,2200.0,2322.5,2244.9,2347.7,2445.8,2810.7,3371.2,3722.1,3091.7],"hi":[2356.0,2337.4,2473.6,2615.6,2773.2,2708.5,2832.6,2958.2,3423.2,4118.0,4586.1,3825.3]},"etsSigma":70.34984284622514,"etsAIC":1533.518637879811,"etsLL":-748.7593189399055,"etsK":18,"etsA":0.42601553607951875,"hwA":{"a":0.11665813936758863,"b":0.0,"g":0.8045127053744893,"l0":792.2099239118454,"b0":14.430107408953333,"s0":[-167.6738345902226,-179.7041668507434,-144.45188435548687,-125.24734061017021,-85.4928345260856,-103.34408539374895,-26.891189967752375,-86.75158020108948,72.74949855836678,284.6419779354745,389.1024943425025,135.29463466065388]},"hwM":{"a":0.31861689531478316,"b":0.0,"g":0.0,"l0":829.1365458141778,"b0":15.411305005002925,"s0":[0.7463887565015732,0.7375892652264227,0.7583124959739613,0.8016521918858803,0.8423891282509369,0.8144693166025883,0.8503833588577333,0.8942436752040617,1.01468267662103,1.2169278247096298,1.3493985821065195,1.1198299788000663]}};
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const nf=(n,d)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const C={o:"#B8530F",a:"#C98A1E",b:"#5B4330",r:"#8A3410",g:"#9A8B72",ink:"#33291E"};
+
+/* progress + nav */
+const prog=$("#prog"),links=$$(".topbar a"),secs=links.map(a=>$(a.getAttribute("href")));
+function onScroll(){const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";let cur=-1;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<120)cur=i});links.forEach((a,i)=>a.classList.toggle("active",i===cur))}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+/* date helpers */
+const mLabel=(y0,m0,i)=>new Date(Date.UTC(y0,m0+i,1)).toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
+const dLabel=(i,base=Date.UTC(2016,0,1))=>new Date(base+i*864e5).toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const monthLabels=(y0,m0,n)=>Array.from({length:n},(_,i)=>mLabel(y0,m0,i));
+const yearTicks=(y0,m0,n)=>{const t=[];for(let i=0;i<n;i++){const d=new Date(Date.UTC(y0,m0+i,1));if(d.getUTCMonth()===0)t.push({i,label:String(d.getUTCFullYear())})}return t};
+
+/* nice ticks */
+function niceTicks(lo,hi,k){const raw=(hi-lo)/k,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,s=(f<1.5?1:f<3?2:f<7?5:10)*p;const t=[];for(let v=Math.ceil(lo/s)*s;v<=hi+1e-9;v+=s)t.push(+v.toFixed(10));return t}
+const tickFmt=(v,step)=>Math.abs(v)>=1000?fmt(v):(Math.abs(v)<10?nf(v,v%1?2:0):nf(v,Math.abs(v)<100&&v%1?1:0));
+
+function legend(root,series){root.innerHTML='<div class="lg">'+series.map(s=>`<span><svg width="30" height="10" aria-hidden="true"><line x1="0" y1="5" x2="30" y2="5" stroke="${s.color}" stroke-width="${s.w||2.5}" stroke-dasharray="${s.dash||""}" opacity="${s.op||1}"/></svg>${s.name}</span>`).join("")+"</div>"}
+
+/* line chart */
+function lineChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=12,pb=o.noX?8:26,N=o.labels.length;
+  let lo=Infinity,hi=-Infinity;o.series.forEach(s=>s.y.forEach(v=>{if(v!=null&&isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  (o.bands||[]).forEach(b=>b.lo.concat(b.hi).forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.06||1;if(o.ymin==null)lo-=pad;if(o.ymax==null)hi+=pad;
+  const x=i=>pl+i*(W-pl-pr)/(N-1),y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb);
+  root.innerHTML='<div class="chw"><div class="tip"></div></div>';const wrap=$(".chw",root),tip=$(".tip",wrap);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Line chart",tabindex:0});wrap.insertBefore(svg,tip);
+  niceTicks(lo,hi,o.yt||4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9","stroke-width":1},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  (o.bands||[]).forEach(b=>{let d="";const idx=b.lo.map((_,i)=>i).filter(i=>b.lo[i]!=null);idx.forEach((i,k)=>{d+=(k?"L":"M")+x(i)+" "+y(b.hi[i])});idx.slice().reverse().forEach(i=>{d+="L"+x(i)+" "+y(b.lo[i])});el("path",{d:d+"Z",fill:b.color||"#D9792B","fill-opacity":.25,stroke:"none"},svg)});
+  if(o.zero&&lo<0&&hi>0)el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  (o.xt||[]).forEach(t=>{el("line",{x1:x(t.i),x2:x(t.i),y1:H-pb,y2:H-pb+4,stroke:"#66573F"},svg);const e=el("text",{x:x(t.i),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);e.textContent=t.label});
+  (o.vlines||[]).forEach(v=>{el("line",{x1:x(v.i),x2:x(v.i),y1:pt,y2:H-pb,stroke:v.color||C.r,"stroke-width":2,"stroke-dasharray":v.dash||"6 4"},svg);if(v.label){const t=el("text",{x:x(v.i)+4,y:pt+11,"font-size":11.5,"font-weight":700,fill:v.color||C.r},svg);t.textContent=v.label}});
+  o.series.forEach(s=>{let d="",pen=false;s.y.forEach((v,i)=>{if(v==null||!isFinite(v)){pen=false;return}d+=(pen?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1);pen=true});
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":s.w||2.5,"stroke-dasharray":s.dash||"",opacity:s.op||1,"stroke-linejoin":"round"},svg)});
+  (o.marks||[]).forEach(m=>{el("circle",{cx:x(m.i),cy:y(m.v),r:6,fill:m.color||C.r,stroke:"#FFFBF1","stroke-width":2},svg);if(m.label){const t=el("text",{x:x(m.i)+(m.dx||9),y:y(m.v)+(m.dy||4),"font-size":11.5,"font-weight":700,fill:m.color||C.r,"text-anchor":m.anchor||"start"},svg);t.textContent=m.label}});
+  const g=el("g",{style:"display:none"},svg),gl=el("line",{y1:pt,y2:H-pb,stroke:"#33291E","stroke-width":1,"stroke-dasharray":"3 3"},g),dots=o.series.map(s=>el("circle",{r:4,fill:s.color,stroke:"#FFFBF1","stroke-width":1.5},g));
+  let cur=Math.floor(N/2);
+  function show(i){cur=i;g.style.display="";const px=x(i);gl.setAttribute("x1",px);gl.setAttribute("x2",px);
+    let h=`<b>${o.labels[i]}</b>`;o.series.forEach((s,k)=>{const v=s.y[i];if(v==null||!isFinite(v)){dots[k].style.display="none";return}dots[k].style.display="";dots[k].setAttribute("cx",px);dots[k].setAttribute("cy",y(v));h+=`<br>${s.name}: ${(o.vFmt||fmt)(v)}`});
+    tip.innerHTML=h;tip.style.display="block";const pct=px/W*100;tip.style.left=pct>60?"auto":`calc(${pct}% + 10px)`;tip.style.right=pct>60?`calc(${100-pct}% + 10px)`:"auto";tip.style.top="0";
+    o.onHover&&o.onHover(i)}
+  svg.addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W;show(Math.max(0,Math.min(N-1,Math.round((px-pl)/(W-pl-pr)*(N-1)))))});
+  svg.addEventListener("pointerleave",()=>{g.style.display="none";tip.style.display="none"});
+  svg.addEventListener("keydown",e=>{if(e.key==="ArrowRight"){show(Math.min(N-1,cur+1));e.preventDefault()}if(e.key==="ArrowLeft"){show(Math.max(0,cur-1));e.preventDefault()}});
+  svg.addEventListener("blur",()=>{g.style.display="none";tip.style.display="none"});
+}
+/* bar chart (grouped) */
+let barId=0;
+function barChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=22,pb=28,N=o.labels.length,ns=o.series.length,id="h"+(barId++);
+  let lo=Math.min(0,...o.series.flatMap(s=>s.v)),hi=Math.max(0,...o.series.flatMap(s=>s.v));if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;if(o.hline)hi=Math.max(hi,o.hline.v);const pad=(hi-lo)*.08;hi+=pad;if(lo<0)lo-=pad;
+  const y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb),gw=(W-pl-pr)/N,bw=gw*.78/ns;
+  root.innerHTML="";const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Bar chart"});root.appendChild(svg);
+  const defs=el("defs",{},svg),pat=el("pattern",{id,width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"},defs);el("rect",{width:6,height:6,fill:"#F5DDBD"},pat);el("rect",{width:3,height:6,fill:C.b},pat);
+  niceTicks(lo,hi,4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9"},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  if(o.hline){el("line",{x1:pl,x2:W-pr,y1:y(o.hline.v),y2:y(o.hline.v),stroke:"#8A3410","stroke-width":2.5,"stroke-dasharray":"6 4"},svg);const ht=el("text",{x:W-pr-4,y:y(o.hline.v)-5,"text-anchor":"end","font-size":12,"font-weight":700,fill:"#8A3410"},svg);ht.textContent=o.hline.label||""}
+  o.labels.forEach((l,i)=>{const t=el("text",{x:pl+gw*(i+.5),y:H-9,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);t.textContent=l;
+    o.series.forEach((s,k)=>{const v=s.v[i];if(v==null)return;const bx=pl+gw*i+gw*.11+bw*k,y0=y(0),y1=y(v);
+      const r=el("rect",{x:bx,y:Math.min(y0,y1),width:bw,height:Math.max(1,Math.abs(y1-y0)),fill:s.hatch?`url(#${id})`:s.color,stroke:s.hatch?C.b:"none"},svg);el("title",{},r).textContent=`${l}: ${(o.vFmt||fmt)(v)}`;
+      if(o.labelsOn!==false&&ns<=2){const t2=el("text",{x:bx+bw/2,y:(v>=0?y1-4:y1+12),"text-anchor":"middle","font-size":ns>1?9.5:11,fill:C.ink},svg);t2.textContent=(o.vFmt||fmt)(v)}})});
+}
+
+const U=D.units,N=U.length,TR=U.slice(0,132),TE=U.slice(132);
+const sum=a=>a.reduce((x,y)=>x+y,0),avg=a=>sum(a)/a.length;
+const mape=(a,p)=>avg(a.map((v,i)=>Math.abs(v-p[i])/Math.abs(v)))*100;
+const mae=(a,p)=>avg(a.map((v,i)=>Math.abs(v-p[i])));
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const LAB=monthLabels(2012,0,N),FROM=108;
+const histS=(c=C.g)=>({name:"Training data",y:U.map((v,i)=>i>=FROM&&i<132?v:null).slice(FROM),color:c,w:2.4,op:.85});
+const actS={name:"Actual 2023",y:U.map((v,i)=>i>=131?v:null).slice(FROM),color:C.ink,w:3.5};
+const padF=f=>Array(24).fill(null).concat(f);
+const xt36=(()=>{const t=[];for(let i=0;i<36;i+=6)t.push({i,label:mLabel(2021,0,i)});return t})();
+const L36=LAB.slice(FROM);
+
+/* smoothing engine */
+function run(y,P){
+  let l=P.l0,b=P.b0,s=P.s?[...P.s0]:null,sse=0;const lev=[],fit=[];
+  for(const obs of y){
+    const so=s?s[0]:(P.s==="mul"?1:0);
+    const f=P.s==="mul"?(l+b)*so:l+b+so;fit.push(f);sse+=(obs-f)**2;
+    const nl=P.s==="mul"?P.a*obs/so+(1-P.a)*(l+b):P.a*(obs-(s?so:0))+(1-P.a)*(l+b);
+    const nb=P.b*(nl-l)+(1-P.b)*b;
+    if(s){const ns=P.s==="mul"?P.g*obs/(l+b)+(1-P.g)*so:P.g*(obs-l-b)+(1-P.g)*so;s=s.slice(1).concat([ns])}
+    l=nl;b=nb;lev.push(l);
+  }
+  const fc=Array.from({length:12},(_,i)=>{const h=i+1,base=l+h*b;return s?(P.s==="mul"?base*s[i%12]:base+s[i%12]):base});
+  return {l,b,s,sse,lev,fit,fc};
+}
+
+/* ---------- cold open ---------- */
+(function(){
+  const s=[{name:"Training (2012–2022)",y:U.map((v,i)=>i<132?v:null),color:C.o,w:2.4},{name:"Test (2023)",y:U.map((v,i)=>i>=131?v:null),color:C.b,w:2.8}];
+  lineChart($("#o_chart"),{labels:LAB,xt:yearTicks(2012,0,N),series:s,h:240,aria:"Lanternly units per month"});
+  const yr=[];for(let y=2012;y<2024;y++)yr.push(sum(U.slice((y-2012)*12,(y-2012)*12+12)));
+  let h="<table><tr><th>Year</th><th class='num'>Units</th><th class='num'>Growth %</th></tr>";
+  for(let k=7;k<12;k++){const g=(yr[k]/yr[k-1]-1)*100;h+=`<tr${k===10?' class="hl"':""}><td>${2012+k}</td><td class="num">${fmt(yr[k])}</td><td class="num">${nf(g,1)}${k===10?" ← slow year":""}</td></tr>`}
+  $("#o_yr").innerHTML=h+"</table>";
+  const sn=D.fc["Seasonal naive"],ses=D.fc.SES,ser=[histS(),actS,{name:"Seasonal naive",y:padF(sn),color:C.o,w:2.6},{name:"SES",y:padF(ses),color:C.b,dash:"6 4",w:2.6}];
+  lineChart($("#b_chart"),{labels:L36,xt:xt36,series:ser,h:250,aria:"Baselines on 2023"});legend($("#b_lg"),ser);
+  $("#b_kpi").innerHTML=`<div><b>Seasonal naive MAPE</b><span>${nf(mape(TE,sn),1)}%</span></div><div><b>SES MAPE</b><span>${nf(mape(TE,ses),1)}%</span></div><div><b>Target</b><span>≤ 5%</span></div>`;
+})();
+
+/* ---------- Holt ---------- */
+(function(){
+  const a=$("#h_a"),b=$("#h_b");
+  function draw(){
+    const A=+a.value,B=+b.value;$("#h_ao").textContent=nf(A,2);$("#h_bo").textContent=nf(B,2);
+    const r=run(TR,{a:A,b:B,l0:D.holt.l0,b0:D.holt.b0,s:null});
+    const ser=[histS(),actS,{name:"Holt forecast",y:padF(r.fc),color:C.o,w:3}];
+    lineChart($("#h_chart"),{labels:L36,xt:xt36,series:ser,h:240,aria:"Holt forecast"});legend($("#h_lg"),ser);
+    $("#h_kpi").innerHTML=`<div><b>MAPE 2023</b><span>${nf(mape(TE,r.fc),1)}%</span></div><div><b>Final level</b><span>${fmt(r.l)}</span></div><div><b>Final trend</b><span>${nf(r.b,2)}</span></div><div><b>Train SSE</b><span style="font-size:19px">${fmt(r.sse)}</span></div>`;
+    $("#h_msg").textContent=(B===0?"With β*=0 the trend never changes from its starting value, so the forecast rises by exactly "+nf(r.b,1)+" units every month. ":"")+(A>=.99?"With α=1 the level jumps to every new observation (December 2022). ":"")+"The line cannot rise and fall with the year, however the weights are set.";
+  }
+  [a,b].forEach(i=>i.addEventListener("input",draw));$("#h_est").onclick=()=>{a.value=1;b.value=0;draw()};$("#h_mid").onclick=()=>{a.value=.5;b.value=.2;draw()};draw();
+  const act=34911,v=[["Actual 2023 total",act,"var(--brown)",""],["SES forecast",31080,"var(--amber)","error 11.0%"],["Holt forecast",33174,"var(--orange)","error 5.0%"]];
+  $("#y_bars").innerHTML=v.map(r=>`<div class="bar"><span>${r[0]}</span><div class="track"><div class="fill" style="width:${r[1]/act*100}%;background:${r[2]}"></div></div><span class="v">${fmt(r[1])} <small style="font-weight:500">${r[3]}</small></span></div>`).join("");
+})();
+
+/* ---------- Holt-Winters ---------- */
+(function(){
+  let type="add";const A=$("#w_a"),B=$("#w_b"),G=$("#w_g");
+  const P=()=>type==="add"?D.hwA:D.hwM;
+  function reset(){const p=P();A.value=p.a.toFixed(3);B.value=p.b.toFixed(3);G.value=p.g.toFixed(3);draw()}
+  function draw(){
+    const p=P(),a=+A.value,b=+B.value,g=+G.value;$("#w_ao").textContent=nf(a,2);$("#w_bo").textContent=nf(b,2);$("#w_go").textContent=nf(g,2);
+    const r=run(TR,{a,b,g,l0:p.l0,b0:p.b0,s0:p.s0,s:type});
+    const ser=[histS(),actS,{name:(type==="add"?"Additive":"Multiplicative")+" Holt-Winters",y:padF(r.fc),color:C.o,w:3}];
+    lineChart($("#w_chart"),{labels:L36,xt:xt36,series:ser,h:250,aria:"Holt-Winters forecast"});legend($("#w_lg"),ser);
+    const m=mape(TE,r.fc);
+    $("#w_kpi").innerHTML=`<div><b>MAPE 2023</b><span>${nf(m,2)}%</span></div><div><b>MAE</b><span>${fmt(mae(TE,r.fc))}</span></div><div><b>Train SSE</b><span style="font-size:19px">${fmt(r.sse)}</span></div><div><b>Final trend</b><span>${nf(r.b,1)}</span></div>`;
+    barChart($("#w_idx"),{labels:MN.map(x=>x[0]),series:[{name:"index",v:r.s,color:C.o}],h:190,vFmt:v=>type==="add"?fmt(v):nf(v,2),yFmt:v=>type==="add"?fmt(v):nf(v,1),labelsOn:false,ymin:type==="mul"?0:undefined,aria:"Seasonal indices"});
+    lineChart($("#w_lev"),{labels:LAB.slice(0,132),xt:yearTicks(2012,0,132).filter((_,i)=>i%2===0),series:[{name:"Level",y:r.lev,color:C.b,w:2.4}],h:190,aria:"Level"});
+    $("#w_msg").textContent=(g>=.7?"A high γ means the model keeps rewriting the monthly shape, so last year counts much more than older years: a warning sign. ":g===0?"γ=0: the monthly shape stays at its starting values for ever. ":"")+(type==="add"?`Additive indices are in units (${MN[10]} ${r.s[10]>0?"+":""}${fmt(r.s[10])}, ${MN[0]} ${fmt(r.s[0])}).`:`Multiplicative indices are ratios around 1 (${MN[10]} ${nf(r.s[10],2)}, ${MN[0]} ${nf(r.s[0],2)}).`);
+    $$("#w_type button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.t===type));
+  }
+  [A,B,G].forEach(i=>i.addEventListener("input",draw));$$("#w_type button").forEach(x=>x.onclick=()=>{type=x.dataset.t;reset()});$("#w_est").onclick=reset;reset();
+  // anatomy
+  const r=run(TR,{a:D.hwA.a,b:D.hwA.b,g:D.hwA.g,l0:D.hwA.l0,b0:D.hwA.b0,s0:D.hwA.s0,s:"add"}),sl=$("#a_m");
+  function an(){const h=+sl.value;$("#a_mo").textContent=`${h} (${MN[(h-1)%12]} 2023)`;const lv=r.l,tr=h*r.b,si=r.s[h-1],f=lv+tr+si,act=TE[h-1];
+    $("#a_out").innerHTML=`<div class="kpi"><div><b>Last level</b><span>${fmt(lv)}</span></div><div><b>+ ${h} × trend</b><span>${fmt(tr)}</span></div><div><b>+ index</b><span>${si>=0?"":"−"}${fmt(Math.abs(si))}</span></div><div><b>= Forecast</b><span>${fmt(f)}</span></div><div><b>Actual</b><span>${fmt(act)}</span></div></div>`}
+  sl.addEventListener("input",an);an();
+})();
+
+/* ---------- pairing ---------- */
+(function(){
+  const yrs=[];for(let y=0;y<12;y++){const a=U.slice(y*12,y*12+12);yrs.push({y:2012+y,d:Math.max(...a)-Math.min(...a),r:Math.max(...a)/Math.min(...a)})}
+  let k="d";
+  function sw(){barChart($("#s_chart"),{labels:yrs.map(r=>String(r.y).slice(2)),series:[{name:"v",v:yrs.map(r=>r[k]),color:k==="d"?C.o:C.a}],h:230,ymin:0,vFmt:v=>k==="d"?fmt(v):nf(v,2),yFmt:v=>k==="d"?fmt(v):nf(v,1),aria:"Seasonal swing by year"});
+    $("#s_msg").textContent=k==="d"?`The swing in units grows from ${fmt(yrs[0].d)} (2012) to ${fmt(yrs[11].d)} (2023), about three times larger.`:`The ratio of peak to trough stays close to 2 every year (${nf(yrs[0].r,2)} in 2012, ${nf(yrs[11].r,2)} in 2023).`;
+    $$("#s_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k))}
+  $$("#s_btns button").forEach(b=>b.onclick=()=>{k=b.dataset.k;sw()});sw();
+  const nm={add:"additive",mul:"multiplicative"};
+  $("#p_tab").innerHTML="<tr><th>Trend</th><th>Season</th><th class='num'>α</th><th class='num'>β*</th><th class='num'>γ</th><th class='num'>Train SSE</th><th class='num'>Test MAPE %</th></tr>"+D.fit.map(f=>`<tr><td>${nm[f.t]}</td><td>${nm[f.s]}</td><td class="num">${nf(f.a,3)}</td><td class="num">${nf(f.b,3)}</td><td class="num">${nf(f.g,3)}</td><td class="num">${fmt(f.sse)}</td><td class="num">${nf(f.mape,2)}</td></tr>`).join("");
+  barChart($("#p_g"),{labels:D.fit.map(f=>f.t+"/"+f.s),series:[{name:"γ",v:D.fit.map(f=>f.g),color:C.o}],h:190,ymin:0,vFmt:v=>nf(v,3),yFmt:v=>nf(v,1),aria:"gamma by pairing"});
+  const t=$("#r_t");
+  function rt(){const T=+t.value;$("#r_to").textContent=nf(T,1);
+    let h="<tr><th>Trend/season</th><th class='num'>2021</th><th class='num'>2022</th><th class='num'>2023</th><th class='num'>Mean</th></tr>";
+    Object.keys(D.roll).forEach(k=>{const v=D.roll[k];h+=`<tr><td>${k}</td>${v.map(x=>`<td class="num">${nf(x,2)}${x<=T?" ✓":""}</td>`).join("")}</tr>`});
+    $("#r_tab").innerHTML=h}
+  t.addEventListener("input",rt);rt();
+  barChart($("#rp"),{labels:["add/add","add/mul"],series:[{name:"first 4 years",v:[4.96,4.20],color:C.a},{name:"last 4 years",v:[5.95,3.84],color:C.b,hatch:true}],h:210,ymin:0,vFmt:v=>nf(v,2)+"%",yFmt:v=>nf(v,0),aria:"Residual spread in percent"});
+  $("#rp").insertAdjacentHTML("beforeend",'<div class="lg"><span><i class="sw" style="background:#C98A1E"></i>first 4 years</span><span><i class="sw" style="background:repeating-linear-gradient(45deg,#F5DDBD 0 3px,#5B4330 3px 6px)"></i>last 4 years</span></div><p class="sub" style="margin:6px 0 0">The additive pairing leaves a <b>growing</b> percentage error (4.96 → 5.95); the multiplicative pairing leaves a <b>shrinking</b> one (4.20 → 3.84).</p>');
+})();
+
+/* ---------- target ---------- */
+(function(){
+  const M={"Seasonal naive":D.fc["Seasonal naive"],"SES":D.fc.SES,"Holt":D.fc.Holt,"HW additive":D.fc["HW add"],"HW add trend, mul season":D.fc["HW add/mul"],"HW mul trend, mul season":D.fc["HW mul/mul"]};
+  const sl=$("#t_v");
+  function draw(){const T=+sl.value;$("#t_vo").textContent=nf(T,1);
+    const keys=Object.keys(M).sort((a,b)=>mape(TE,M[a])-mape(TE,M[b])),vals=keys.map(k=>mape(TE,M[k]));
+    const W=720,rh=32,H=keys.length*rh+36,pl=190,pr=60,mx=Math.max(...vals,T)*1.08,x=v=>pl+v/mx*(W-pl-pr);
+    const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"MAPE of each model on 2023"});
+    niceTicks(0,mx,5).forEach(t=>{el("line",{x1:x(t),x2:x(t),y1:8,y2:H-24,stroke:"#D6C7A9"},svg);const tx=el("text",{x:x(t),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=t+"%"});
+    keys.forEach((k,i)=>{const y=12+i*rh,ok=vals[i]<=T;const t=el("text",{x:pl-8,y:y+17,"text-anchor":"end","font-size":13,"font-weight":ok?700:500,fill:C.ink},svg);t.textContent=k;
+      el("rect",{x:pl,y:y+3,width:x(vals[i])-pl,height:21,rx:4,fill:ok?C.o:"#F5DDBD",stroke:ok?"none":C.b,"stroke-dasharray":ok?"":"4 3"},svg);
+      const v=el("text",{x:x(vals[i])+6,y:y+18,"font-size":12.5,"font-weight":700,fill:C.ink},svg);v.textContent=nf(vals[i],2)+"%"+(ok?" ✓":"")});
+    el("line",{x1:x(T),x2:x(T),y1:6,y2:H-24,stroke:C.r,"stroke-width":2.5,"stroke-dasharray":"6 4"},svg);
+    $("#t_chart").replaceChildren(svg);const met=keys.filter((_,i)=>vals[i]<=T);
+    $("#t_msg").innerHTML=`<b>${met.length}</b> of ${keys.length} models meet a target of ${nf(T,1)}% on 2023 (filled bars, ✓).`}
+  sl.addEventListener("input",draw);draw();
+  const f=D.fc["HW add/mul"],ape=TE.map((v,i)=>Math.abs(v-f[i])/v*100);
+  barChart($("#m_chart"),{labels:MN,series:[{name:"APE",v:ape,color:C.o}],h:230,hline:{v:5,label:"5% target"},vFmt:v=>nf(v,1)+"%",yFmt:v=>nf(v,0),aria:"Absolute percentage error by month"});
+  const signed=avg(TE.map((v,i)=>v-f[i]));
+  $("#m_kpi").innerHTML=`<div><b>MAPE</b><span>${nf(avg(ape),1)}%</span></div><div><b>MAE</b><span>${fmt(mae(TE,f))} units</span></div><div><b>Months above 5%</b><span style="font-size:19px">${MN.filter((_,i)=>ape[i]>5).join(", ")}</span></div><div><b>Avg signed error</b><span>+${nf(signed,0)} units</span></div>`;
+})();
+
+/* ---------- range ---------- */
+(function(){
+  function ppf(p){const q=1-p,t=Math.sqrt(-2*Math.log(q));return t-(2.515517+.802853*t+.010328*t*t)/(1+1.432788*t+.189269*t*t+.001308*t*t*t)}
+  const mean=D.ci["0.05"].mean[0],sig=D.etsSigma,sl=$("#z_c");
+  function zc(){const c=+sl.value;$("#z_co").textContent=nf(c,1);const z=ppf(1-(1-c/100)/2),lo=mean-z*sig,hi=mean+z*sig;
+    const key={80:"0.2",95:"0.05",99:"0.01"}[Math.round(c)];const lib=(Math.abs(c-Math.round(c))<1e-9&&key)?D.ci[key]:null;
+    $("#z_out").innerHTML=`<div class="kpi"><div><b>z</b><span>${nf(z,3)}</span></div><div><b>By hand: forecast ± z·σ</b><span style="font-size:19px">${nf(lo,0)} to ${nf(hi,0)}</span></div><div><b>Width</b><span>${fmt(hi-lo)}</span></div>${lib?`<div><b>statsmodels</b><span style="font-size:19px">${nf(lib.lo[0],0)} to ${nf(lib.hi[0],0)}</span></div>`:""}</div>`}
+  sl.addEventListener("input",zc);$$("[data-c]",$("#z_out").parentElement).forEach(b=>b.onclick=()=>{sl.value=b.dataset.c;zc()});zc();
+  let a="0.05";
+  function cd(){const c=D.ci[a],ser=[histS(),actS,{name:"Forecast",y:padF(c.mean),color:C.o,w:3}];
+    lineChart($("#c_chart"),{labels:L36,xt:xt36,series:ser,bands:[{lo:padF(c.lo),hi:padF(c.hi),color:"#D9792B"}],h:260,aria:"Range forecast"});
+    $("#c_lg").innerHTML='<div class="lg"><span><svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#B8530F" stroke-width="3"/></svg>forecast</span><span><svg width="30" height="12"><rect width="30" height="12" fill="#D9792B" fill-opacity=".35"/></svg>interval</span><span><svg width="30" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#33291E" stroke-width="3.5"/></svg>actual 2023</span></div>';
+    $$("#c_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===a));
+    const z={"0.2":1.282,"0.05":1.96,"0.01":2.576};
+    $("#c_tab").innerHTML="<tr><th>Confidence</th><th class='num'>z</th><th class='num'>Average width</th><th class='num'>Width, month 1</th><th class='num'>Width, month 12</th><th class='num'>Actuals inside</th></tr>"+["0.2","0.05","0.01"].map(k=>{const v=D.ci[k];return `<tr${k===a?' class="hl"':""}><td>${Math.round((1-k)*100)}%</td><td class="num">${nf(z[k],3)}</td><td class="num">${fmt(v.avgw)}</td><td class="num">${fmt(v.w1)}</td><td class="num">${fmt(v.w12)}</td><td class="num">${v.inside} of 12</td></tr>`}).join("")}
+  $$("#c_btns button").forEach(b=>b.onclick=()=>{a=b.dataset.c;cd()});cd();
+  const c=D.ci["0.05"];
+  $("#pl_tab").innerHTML="<tr><th>Month</th><th class='num'>Low (2.5%)</th><th class='num'>Forecast</th><th class='num'>High (97.5%)</th><th class='num'>Actual (for checking)</th></tr>"+MN.map((m,i)=>`<tr><td>${m} 2023</td><td class="num">${fmt(c.lo[i])}</td><td class="num"><b>${fmt(c.mean[i])}</b></td><td class="num">${fmt(c.hi[i])}</td><td class="num">${fmt(TE[i])}${TE[i]<c.lo[i]||TE[i]>c.hi[i]?" ✗ outside":""}</td></tr>`).join("");
+})();
+
+/* ---------- ETS ---------- */
+(function(){
+  const R=D.ranked.map((r,i)=>({...r,rank:i+1,seas:!r.m.endsWith(",N)")}));
+  const by=Object.fromEntries(R.map(r=>[r.m,r]));
+  function nm(){const e=$("#n_e").value,t=$("#n_t").value,d=$("#n_d").value,s=$("#n_s").value;
+    if(t==="N"){$("#n_d").value="";}
+    const name=`ETS(${e},${t}${t==="N"?"":d},${s})`,r=by[name];
+    const alias={"ETS(A,N,N)":"This is SES.","ETS(A,A,N)":"This is Holt's method.","ETS(A,A,M)":"The model of the last section.","ETS(M,A,M)":"The AIC winner."}[name];
+    $("#n_out").innerHTML=r?`<div><b>Model</b><span style="font-size:19px">${name}</span></div><div><b>AIC</b><span>${nf(r.aic,1)}</span></div><div><b>Rank by AIC</b><span>${r.rank} of 30</span></div><div><b>Parameters k</b><span>${r.k}</span></div><div><b>Test MAPE</b><span>${nf(r.mape,2)}%</span></div>`:`<div><b>Model</b><span style="font-size:19px">${name}</span></div>`;
+    $("#n_msg").textContent=(alias?alias+" ":"")+(r?(r.seas?"It has a seasonal part.":"No seasonal part: all ten such models are in positions 20 to 30."):"")}
+  ["n_e","n_t","n_d","n_s"].forEach(i=>$("#"+i).addEventListener("change",nm));nm();
+  // scatter
+  const W=720,H=300,pl=58,pr=16,pt=16,pb=40,ax=R.map(r=>r.aic),ay=R.map(r=>r.mape),lo=Math.min(...ax)-30,hi=Math.max(...ax)+30,ym=Math.max(...ay)*1.1,x=v=>pl+(v-lo)/(hi-lo)*(W-pl-pr),y=v=>pt+(1-v/ym)*(H-pt-pb);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Scatter of AIC against test MAPE for 30 ETS models"});
+  niceTicks(0,ym,5).forEach(t=>{el("line",{x1:pl,x2:W-pr,y1:y(t),y2:y(t),stroke:"#D6C7A9"},svg);const tx=el("text",{x:pl-7,y:y(t)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);tx.textContent=t+"%"});
+  niceTicks(lo,hi,6).forEach(t=>{const tx=el("text",{x:x(t),y:H-20,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=fmt(t)});
+  const xl=el("text",{x:(pl+W-pr)/2,y:H-3,"text-anchor":"middle","font-size":12,fill:"#66573F"},svg);xl.textContent="AIC (lower is better) →";
+  const yl=el("text",{x:14,y:pt+10,"font-size":12,fill:"#66573F"},svg);yl.textContent="test MAPE";
+  R.forEach(r=>{const cx=x(r.aic),cy=y(r.mape);let e;
+    if(r.seas)e=el("circle",{cx,cy,r:6,fill:C.o,"fill-opacity":.85,stroke:"#FFFBF1"},svg);else e=el("path",{d:`M${cx} ${cy-7} l7 12 h-14 z`,fill:C.b},svg);
+    el("title",{},e).textContent=`${r.m}: AIC ${nf(r.aic,1)}, test MAPE ${nf(r.mape,2)}%`;
+    if(r.rank===1)el("circle",{cx,cy,r:11,fill:"none",stroke:C.r,"stroke-width":2.5},svg)});
+  $("#e_scatter").appendChild(svg);
+  let all=false;
+  function tab(){const rows=all?R:R.slice(0,8);
+    $("#e_tab").innerHTML="<tr><th class='num'>#</th><th>Model</th><th class='num'>AIC</th><th class='num'>k</th><th class='num'>Test MAPE %</th><th>Seasonal part</th></tr>"+rows.map(r=>`<tr${r.rank===1?' class="best"':""}><td class="num">${r.rank}</td><td>${r.m}</td><td class="num">${nf(r.aic,2)}</td><td class="num">${r.k}</td><td class="num">${nf(r.mape,2)}</td><td>${r.seas?"yes":"no"}</td></tr>`).join("");
+    $("#e_all").textContent=all?"Show top 8 only":"Show all 30 rows";$("#e_all").setAttribute("aria-pressed",all)}
+  $("#e_all").onclick=()=>{all=!all;tab()};tab();
+  // final ranges
+  const M={aam:{n:"ETS(A,A,M)",mean:D.ci["0.05"].mean,lo:D.ci["0.05"].lo,hi:D.ci["0.05"].hi,col:"#B8530F"},mam:{n:D.best.name,mean:D.best.mean,lo:D.best.lo,hi:D.best.hi,col:"#5B4330"}};
+  let m="mam";
+  function fd(){const c=M[m],ser=[histS(),actS,{name:c.n+" forecast",y:padF(c.mean),color:c.col,w:3}];
+    lineChart($("#f_chart"),{labels:L36,xt:xt36,series:ser,bands:[{lo:padF(c.lo),hi:padF(c.hi),color:c.col}],h:260,aria:"Final range forecast"});legend($("#f_lg"),ser);
+    const ins=k=>TE.filter((v,i)=>v>=M[k].lo[i]&&v<=M[k].hi[i]).length,w=k=>M[k].hi.map((h,i)=>h-M[k].lo[i]);
+    $("#f_tab").innerHTML=`<tr><th>95% width (units)</th><th class='num'>Jan</th><th class='num'>Feb</th><th class='num'>Nov</th><th class='num'>Dec</th><th class='num'>Actuals inside</th><th class='num'>MAPE 2023</th></tr>`+["aam","mam"].map(k=>{const ww=w(k);return `<tr${k===m?' class="hl"':""}><td>${M[k].n}</td>${[0,1,10,11].map(i=>`<td class="num">${fmt(ww[i])}</td>`).join("")}<td class="num">${ins(k)} of 12</td><td class="num">${nf(mape(TE,M[k].mean),2)}%</td></tr>`}).join("");
+    $$("#f_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m))}
+  $$("#f_btns button").forEach(b=>b.onclick=()=>{m=b.dataset.m;fd()});fd();
+})();
+
+/* ---------- quizzes ---------- */
+const Q=[
+ {q:"In Holt's method, what does the trend component b(t) add compared with simple exponential smoothing?",o:["A seasonal index for every month, so that the forecast repeats a yearly shape","A smoothed slope, so that the forecast continues along a straight rising line","A smaller smoothing weight, so that older observations are forgotten more quickly","A confidence band, so that the forecast gets wider as the horizon grows longer"],a:1,e:"The trend is a smoothed estimate of the change per month, and the forecast is the level plus h times that slope, which is a straight line. The seasonal index belongs to Holt-Winters, not to Holt's method (A). The weights are controlled by α, and the trend is an extra state and not a different weighting (C). A range around the forecast comes from the error distribution of the model, which we meet later, and not from the trend (D)."},
+ {q:"Holt-Winters (additive) forecasts sales for November, 11 steps after the last observed month. Which pieces make up the forecast?",o:["The November value of last year, copied forward and nothing else","The last level plus the average of all twelve seasonal indices","The trend value alone, multiplied by the number of steps ahead","The last level, plus 11 steps of trend, plus the November index"],a:3,e:"The forecast is the last level plus h times the trend plus the seasonal index stored for that month, so for November it uses the last level, eleven months of growth and the November index. Copying last year's value is the seasonal naive rule, which has no level or trend updates (A). The average of the indices does not give the month-specific shape, and the additive indices roughly sum to zero anyway (B). A trend alone is the Holt line without the level or the seasonality (C)."},
+ {q:"A store's sales grow three times over ten years, but the ratio of peak to trough stays near 2. Which seasonal form is the natural first choice?",o:["Multiplicative, because the size of the swing grows in proportion to the level","Additive, because the swing is a fixed number of units in every year","Additive, because a growing level always requires an additive seasonal term","Multiplicative, because multiplicative models never need to revise any indices"],a:0,e:"A constant ratio between peak and trough means the swing grows with the level, which is the definition of multiplicative seasonality. A fixed swing in units would be the additive case, and our data does not show that (B). Growth of the level does not by itself make the additive form correct, the behaviour of the swing decides (C). Multiplicative models do revise their indices through γ, they are just able to keep it low when the shape is stable (D)."},
+ {q:"A manager asks for a 99% interval instead of a 95% interval, for the same model and the same data. What happens?",o:["The band gets narrower, because a higher confidence means a more precise forecast value","The band stays the same, because only the point forecast depends on the model","The band gets wider, because a larger multiple of the error is needed to be surer","The band moves upward by a fixed amount while keeping the same width every month"],a:2,e:"The interval is the forecast plus and minus z times the error spread, and z grows from 1.96 to 2.58 when the confidence goes from 95% to 99%, so the band widens around the same forecast. Higher confidence does not make the forecast more precise, it only makes the statement safer (A). The width depends on z, which is a choice, as well as on the error of the model (B). The band is centred on the forecast, so it does not shift upward, and it also gets wider with the horizon (D)."},
+ {q:"ETS model X has the lowest AIC on the training years, but model Y has a lower MAPE on the test year. What is the correct reading?",o:["The AIC is wrong, because the test error is always the final truth about a model","AIC balances fit and complexity on training data, while one test year is noisy","Model Y must be overfitted, since it was not the model that the AIC ranking preferred first","The two models cannot be compared, since AIC works for only one model family"],a:1,e:"AIC measures how well a model explains the training years after a penalty for the number of parameters, and twelve test months are a small and noisy sample, so the two can disagree without either being wrong. The test error is not a final truth either, since a different test year could rank the models in another order (A). Overfitting would show up as a good training fit and a poor test result, which is the opposite of what happened to Y (C). AIC is exactly for comparing models, including the whole ETS family on the same data (D)."}];
+$$(".quiz").forEach(box=>{
+  const d=Q[+box.dataset.q];let done=false;
+  box.innerHTML=`<div class="ct" style="color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase">Check your understanding</div><div class="q"></div><div class="os"></div><div class="fb" role="status"></div>`;
+  $(".q",box).textContent=d.q;
+  d.o.forEach((t,i)=>{const b=document.createElement("button");b.className="opt";b.type="button";b.innerHTML="<b>"+"ABCD"[i]+".</b> ";b.appendChild(document.createTextNode(t));
+    b.onclick=()=>{const fb=$(".fb",box);if(i===d.a){done=true;b.classList.add("right");$$(".opt",box).forEach(x=>x.disabled=true);fb.innerHTML="<b>Correct.</b> ";fb.appendChild(document.createTextNode(d.e))}else{b.classList.add("wrong");b.disabled=true;fb.innerHTML="<b>Not quite — try another option.</b>"}fb.classList.add("show")};
+    $(".os",box).appendChild(b)});
+});
+
+})();
+</script>
+</body>
+</html>
