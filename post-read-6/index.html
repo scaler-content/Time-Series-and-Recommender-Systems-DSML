@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ARIMA Family Reunion</title>
+<style>
+
+:root{
+  --bg:#F1E8D6; --paper:#FAF4E6; --card:#FFFBF1; --sand:#E7DBC2; --line:#D6C7A9;
+  --ink:#33291E; --muted:#66573F; --brown:#5B4330; --deep:#3B2A1C;
+  --orange:#B8530F; --orange-ink:#9C4509; --orange-btn:#A84A0B; --orange-2:#D9792B; --amber:#E3A94B; --tint:#F5DDBD; --tint-2:#FBEBD3; --rust:#8A3410;
+  --radius:14px; --shadow:0 1px 2px rgba(59,42,28,.08),0 6px 18px rgba(59,42,28,.06);
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7}
+a{color:var(--orange-ink)}
+:focus-visible{outline:3px solid var(--orange-2);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top nav */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,244,230,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.topbar nav{max-width:1080px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:thin}
+.topbar a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px}
+.topbar a:hover{background:var(--tint-2);color:var(--orange-ink)}
+.topbar a.active{background:var(--orange-btn);color:#fff}
+.progress{height:3px;background:transparent}
+.progress i{display:block;height:100%;width:0;background:var(--orange-2)}
+
+/* hero */
+.hero{background:var(--deep);color:#F3E7D0;padding:72px 20px 64px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,121,43,.35),rgba(217,121,43,0) 70%)}
+.hero .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.hero h1{font-family:var(--serif);font-size:clamp(32px,5.4vw,54px);line-height:1.12;margin:12px 0 18px;font-weight:700;color:#FFF6E4}
+.hero p{font-size:19px;max-width:700px;color:#E6D6B8;margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid rgba(243,231,208,.35);border-radius:999px;padding:4px 14px;font-size:14px;color:#F3E7D0}
+
+/* layout */
+main{max-width:860px;margin:0 auto;padding:12px 20px 60px}
+section{padding-top:48px}
+section>h2{font-family:var(--serif);font-size:clamp(26px,3.6vw,34px);line-height:1.2;margin:0 0 6px;color:var(--deep)}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-ink)}
+h3{font-family:var(--serif);font-size:22px;margin:34px 0 8px;color:var(--deep)}
+h4{margin:20px 0 6px;font-size:17px;color:var(--brown)}
+p{margin:0 0 14px}
+ul,ol{padding-left:22px;margin:0 0 14px}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sand);padding:1px 6px;border-radius:5px}
+pre{background:#2F2217;color:#F2E5CC;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:14px;line-height:1.55;margin:10px 0 14px}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+pre.out{background:var(--sand);color:var(--ink);border-left:4px solid var(--orange-2);border-radius:6px;margin-top:-6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:18px 0}
+.card>h4:first-child,.card>.ct{margin-top:0}
+.ct{font-weight:700;color:var(--deep);font-size:16px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:12px}
+.viz{border-top:5px solid var(--orange-2)}
+.viz .tag{display:inline-block;background:var(--tint);color:var(--rust);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 10px;border-radius:999px;margin-bottom:8px}
+.callout{background:var(--tint-2);border-left:5px solid var(--orange);border-radius:8px;padding:14px 18px;margin:18px 0}
+.callout b.h{display:block;color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.callout.note{background:var(--sand);border-left-color:var(--brown)}
+.callout.note b.h{color:var(--brown)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}body{font-size:16px}}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mini b{display:block;color:var(--deep);margin-bottom:2px}
+.mini .big{font-family:var(--serif);font-size:28px;color:var(--orange-ink);line-height:1.1}
+
+/* controls */
+button,.btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:999px;border:1.5px solid var(--orange-btn);background:var(--card);color:var(--orange-ink);padding:6px 16px}
+button:hover{background:var(--tint-2)}
+button[aria-pressed="true"],button.on{background:var(--orange-btn);color:#fff}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+label{font-size:14px;font-weight:600;color:var(--brown)}
+input[type=range]{width:100%;accent-color:var(--orange-btn)}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;margin-bottom:12px}
+.ctrl output{font-family:var(--mono);color:var(--orange-ink);font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.chk input{accent-color:var(--orange-btn);width:18px;height:18px}
+
+/* tables */
+.tw{overflow-x:auto;margin:10px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--sand);color:var(--deep);font-size:14px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--tint-2)}
+
+/* bars */
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bar .track{background:var(--sand);border-radius:6px;height:26px;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px;transition:width .35s}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+@media(max-width:560px){.bar{grid-template-columns:1fr;gap:2px}.bar .v{text-align:left}}
+
+/* calendar grid */
+.cal{display:grid;grid-template-columns:42px repeat(12,minmax(0,1fr));gap:3px;font-size:11px;max-width:620px}
+.cal .hd,.cal .yr{color:var(--muted);font-weight:700;text-align:center;line-height:20px}
+.cal .yr{text-align:right;padding-right:4px}
+.cal .c{height:20px;border-radius:4px;background:var(--sand);border:1px solid var(--line);text-align:center;line-height:17px;color:var(--brown);font-size:11px}
+.cal .c.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange);color:var(--rust)}
+.cal .c.absent{background:transparent;border:1.5px dashed var(--rust);color:var(--rust);font-weight:700}
+.cal .c.blank{visibility:hidden}
+.cal .cnt{height:46px;display:flex;align-items:flex-end;justify-content:center}
+.cal .cnt i{display:block;width:100%;background:var(--orange);border-radius:3px 3px 0 0;position:relative}
+.cal .cnt i.top{background:var(--rust)}
+.cal .cn{text-align:center;font-weight:700;color:var(--deep);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:10px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:14px;border-radius:3px;background:var(--sand);border:1px solid var(--line)}
+.sw.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.sw.absent{background:transparent;border:1.5px dashed var(--rust)}
+
+svg text{font-family:var(--sans)}
+svg{max-width:100%;height:auto;display:block}
+.mrow{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+.mrow div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:8px 0;font-size:13px;font-weight:700;background:var(--sand);color:var(--brown)}
+.mrow .dip{background:var(--card);border:2px dashed var(--brown)}
+.mrow .peak{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+
+/* steps */
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.steps button{border-radius:10px}
+.stepbody{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+
+/* quiz */
+.quiz{border-left:6px solid var(--orange)}
+.quiz .q{font-weight:600;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;margin:6px 0;font-weight:500}
+.opt:hover{border-color:var(--orange-2);background:var(--tint-2)}
+.opt.right{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+.opt.wrong{border:2px dashed var(--rust);background:var(--paper)}
+.quiz .fb{display:none;margin-top:10px;background:var(--sand);border-radius:8px;padding:10px 14px;font-size:15px}
+.quiz .fb.show{display:block}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:0}
+summary{cursor:pointer;padding:12px 18px;font-weight:700;color:var(--deep);list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--orange-ink);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details .dbody{padding:0 18px 14px}
+details pre{margin-top:0}
+
+footer{background:var(--deep);color:#D9C7A4;text-align:center;padding:28px 20px;font-size:14px}
+
+.chw{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--deep);color:#F3E7D0;font-size:12.5px;line-height:1.45;padding:6px 10px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+.eq{font-family:var(--serif);font-size:19px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0;overflow-x:auto;text-align:center}
+.eq small{font-size:14px;color:var(--muted);font-family:var(--sans)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:6px 0 4px}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.faq{border-left:5px solid var(--amber);background:var(--card);border-radius:8px;padding:12px 16px;margin:16px 0}
+.faq b{color:var(--rust)}
+.cal .c.test{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.cal .c.tr{background:var(--sand)}
+.chips2{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips2 button{font-size:13px;padding:4px 12px}
+.chips2 button[aria-pressed="true"]{background:var(--orange-btn);color:#fff}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0}
+.kpi div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.kpi b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi span{font-family:var(--serif);font-size:24px;color:var(--orange-ink)}
+input[type=number]{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+tr.best td{background:var(--tint)}
+select{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+
+</style>
+</head>
+<body>
+<div class="topbar" role="banner">
+  <nav aria-label="Sections">
+    <a href="#open">Two winners</a><a href="#ar">AR</a><a href="#arcode">AR in code</a><a href="#ma">MA</a><a href="#arima">ARMA &amp; ARIMA</a><a href="#sarima">SARIMA</a><a href="#orders">Choosing orders</a><a href="#auto">auto_arima</a><a href="#resid">Residuals</a><a href="#cv">Cross-validation</a><a href="#final">The contest</a><a href="#recap">Recap</a>
+  </nav>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Time Series &amp; Recommender System · Class 6</div>
+    <h1>The ARIMA Family Reunion: AR, MA, ARIMA and SARIMA Without the Guesswork</h1>
+    <p>Build the ARIMA family step by step, from AR and MA to SARIMA, choose the orders with evidence instead of guesswork, check the residuals properly, and compare the final models with rolling-origin cross-validation.</p>
+    <div class="chips"><span class="chip">Case: VoltNest</span><span class="chip">168 months · Jan 2011 – Dec 2024</span><span class="chip">Python · SARIMAX · pmdarima</span></div>
+  </div>
+</header>
+
+<main>
+<section id="intro" style="padding-top:36px">
+  <div class="callout note"><b class="h">About the data</b>This class starts a new story with a new file. VoltNest sells batteries for home inverters: 168 months, January 2011 to December 2024, no missing values, already clean using the steps from Class 1. The data is simulated for teaching; the numbers are not real figures of any company. Training data is 2011–2023 (156 months) and the test year is 2024, except where a section says otherwise.</div>
+</section>
+
+<section id="open">
+  <div class="kicker">1 · Cold open</div>
+  <h2>Two analysts, two winners</h2>
+  <p>VoltNest sells home inverter batteries, and sales jump every summer when power cuts begin. The planning head must order stock twelve months ahead and wants a forecast error under <b>5% MAPE</b>. She has two analysts. The first swears by Holt-Winters, which we built earlier. The second swears by a model called SARIMA. Each has brought a slide that proves their model is better, and both slides use real numbers. How is that possible?</p>
+  <div class="card viz"><span class="tag">Visualizer · the series</span>
+    <div id="o_chart"></div>
+    <p class="sub" style="margin:6px 0 0">The series climbs over the years and has a tall peak every summer, so it has both a trend and a yearly seasonality. Between the peaks, the level also wanders up and down in a way that a straight line does not explain.</p>
+  </div>
+  <p>Each analyst trains on all the data before a year and forecasts the twelve months of that year. Treat the SARIMA line as a black box for now; by the end of the class every number inside it will make sense.</p>
+  <div class="card viz"><span class="tag">Visualizer · the two slides</span>
+    <div class="btnrow" id="c_btns" role="group" aria-label="Test year"><button data-y="2021" aria-pressed="true">Analyst 1 tests on 2021</button><button data-y="2023" aria-pressed="false">Analyst 2 tests on 2023</button></div>
+    <div id="c_bars"></div>
+    <div class="tw"><table id="c_tab"></table></div>
+    <p id="c_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+<pre><code>def hw_forecast(history):
+    fit = ExponentialSmoothing(history, trend="add", seasonal="add", seasonal_periods=12,
+                               initialization_method="estimated").fit()
+    return fit.forecast(12)
+
+def sarima_forecast(history):
+    fit = SARIMAX(history, order=(2, 1, 1), seasonal_order=(0, 1, 1, 12)).fit(disp=False)
+    return fit.forecast(12)</code></pre>
+  <p><b>Both slides are true.</b> On 2021, Holt-Winters has a MAPE of 5.42% and SARIMA has 7.33%, so Analyst 1 wins. On 2023, Holt-Winters has 7.70% and SARIMA has 5.96%, so Analyst 2 wins. The winner depends on which year you test on. One test period is one exam paper, and a student can be lucky on one paper.</p>
+  <div class="faq"><b>Which model would you pick for next year, and what extra evidence would you want?</b><br>A good answer is "neither yet". We want the same contest repeated over several periods, we want to know that each model is built correctly, and we want to check that its errors have no pattern left.</div>
+  <h3>The plan</h3>
+  <div class="grid2">
+    <div class="mini"><b>1</b> Build the family one member at a time: AR, MA, ARMA, ARIMA, SARIMA.</div>
+    <div class="mini"><b>2</b> Choose the orders with the ACF and PACF, grid search and <code>auto_arima</code>.</div>
+    <div class="mini"><b>3</b> Check the residuals.</div>
+    <div class="mini"><b>4</b> Settle the contest with rolling-origin cross-validation.</div>
+  </div>
+</section>
+
+<section id="ar">
+  <div class="kicker">2 · Memory of past values</div>
+  <h2>Auto regression: lags as features, PACF and SES weights</h2>
+  <p>The smoothing models describe a series through its level, trend and season. But what about a stationary series, which has none of these? It looks random, yet there can still be information left in it: Class 5 showed that this month's value can be related to earlier values.</p>
+  <p>Suppose our series came with an extra column that helps to explain it. We could simply run a linear regression. A univariate series has no extra column, so we create features from the series itself: the value at time 𝑡 is the target, and the values at 𝑡−1, 𝑡−2, …, 𝑡−𝑝 are the features.</p>
+  <div class="eq">ŷ<sub>t</sub> = α<sub>0</sub> + α<sub>1</sub>y<sub>t−1</sub> + α<sub>2</sub>y<sub>t−2</sub> + ⋯ + α<sub>p</sub>y<sub>t−p</sub>, &nbsp; y<sub>t</sub> = ŷ<sub>t</sub> + ε<sub>t</sub></div>
+  <div class="tw"><table><tr><th>Symbol</th><th>Meaning</th></tr>
+    <tr><td>α<sub>0</sub></td><td>intercept (parameter)</td></tr><tr><td>α<sub>1</sub>, …, α<sub>p</sub></td><td>weights on the past values (parameters, learnt from data)</td></tr>
+    <tr><td>ε<sub>t</sub></td><td>error term, what the past values cannot explain</td></tr><tr><td>p</td><td>number of past values used (hyperparameter, chosen by us)</td></tr></table></div>
+  <p>This is <b>auto regression of order p</b>, written AR(p). "Auto" means that the series is regressed on itself. If I want to guess today's temperature and I have no weather station, I still have one very good source: the last few days. Auto regression is exactly that: the past values of the series become the columns of an ordinary regression table.</p>
+  <p>AR needs a stationary series, so we set the test year aside and check the training data first.</p>
+  <div class="card viz"><span class="tag">Visualizer · stationarity check</span>
+    <div class="kpi"><div><b>ADF p, train (units)</b><span>0.9768</span></div><div><b>Verdict</b><span style="font-size:19px">not stationary</span></div><div><b>ADF p, after diff(1)</b><span>0.0047</span></div><div><b>Verdict</b><span style="font-size:19px">stationary</span></div></div>
+    <div id="a_chg"></div>
+    <p class="sub" style="margin:6px 0 0">After one difference the series <code>train_st</code> holds month-to-month changes, not units. <b>Important:</b> as in Class 5, the ADF test does not look for seasonality. <code>train_st</code> still contains the yearly cycle; we keep this in mind and see what it costs.</p>
+  </div>
+  <div class="card viz"><span class="tag">Visualizer · the lag table</span>
+    <div class="tw"><table id="a_lag"></table></div>
+    <p class="sub" style="margin:6px 0 0">The first three columns are the past values y(t−1), y(t−2), y(t−3) and the last column is the value to predict. A value that is the target in one month becomes y(t−1) in the next month, then y(t−2), then y(t−3). The first three monthly changes have no complete history, so they are dropped.</p>
+  </div>
+  <h3>When does AR make sense, and what is p?</h3>
+  <p>AR is useful when the past has a direct link with the present. The <b>partial autocorrelation (PACF)</b> measures that: the correlation with lag 𝑘 after removing what lags 1 to 𝑘−1 already explain. A feature that only repeats what the other features already say adds little to a regression, and the PACF helps us to avoid it.</p>
+  <div class="card viz"><span class="tag">Visualizer · PACF of the monthly changes</span>
+    <div id="a_pacf"></div>
+    <p class="sub" style="margin:6px 0 0">The PACF is 0.45 at lag 1 and −0.50 at lag 2, both far outside the band of ±0.157. At lag 3 it drops to about −0.13, inside the band. So the first reading is <b>p = 2</b>: two past values carry the short-range memory. A negative bar counts just as much as a positive one; the size matters. There are large bars again further to the right (around lags 8 to 12), which come from the seasonality that we did not remove.</p>
+  </div>
+  <p>Fit AR(2) as a plain linear regression: the intercept is 4.38, α<sub>1</sub> = 0.654, α<sub>2</sub> = −0.489, and R² on the training data is 0.388. The last two monthly changes explain about 39% of the variation in this month's change. If last month rose, this month tends to rise too, but a rise two months ago pulls it back.</p>
+  <h3>How is this different from Simple Exponential Smoothing?</h3>
+  <p>SES from Class 3 also takes a weighted average of past values, and it even looks like a regression:</p>
+  <div class="eq">ŷ<sub>t+1</sub> = α·y<sub>t</sub> + α(1−α)·y<sub>t−1</sub> + α(1−α)²·y<sub>t−2</sub> + …</div>
+  <div class="card viz"><span class="tag">Visualizer · weights on past values</span>
+    <div class="ctrl"><div><label for="w_a">SES α: <output id="w_ao"></output></label><input id="w_a" type="range" min="0.05" max="0.95" step="0.05" value="0.5"></div></div>
+    <div id="w_chart"></div><div id="w_lg"></div>
+    <p class="sub" style="margin:6px 0 0">The SES weights (0.5, 0.25, 0.125, … at α = 0.5) are always positive and always shrinking, all fixed by one number. The AR(6) weights are learnt from the data one by one: positive at lag 1, negative at lag 2, with no required shape.</p>
+  </div>
+  <div class="tw"><table><tr><th>Question</th><th>SES</th><th>AR(p)</th></tr>
+    <tr><td>Shape of the weights</td><td>exponentially decaying</td><td>any shape, learnt from data</td></tr>
+    <tr><td>Hyperparameter</td><td>α</td><td>p</td></tr>
+    <tr><td>What is estimated</td><td>one smoothing factor</td><td>p weights and an intercept</td></tr></table></div>
+  <p>SES is a recipe with one dial. Turn it, and all the weights move together. AR gives you one dial for every past value and lets the data set each of them.</p>
+  <div class="card quiz" data-q="0"></div>
+</section>
+
+<section id="arcode">
+  <div class="kicker">3 · AR in code</div>
+  <h2>Forecast the changes, then integrate</h2>
+  <p>For the rest of the class we use one function, <code>SARIMAX</code>, for every model in the family. It takes an <b>order</b> tuple of three numbers, (p, d, q): the first is the AR order 𝑝, the second is the number of differences 𝑑, the third is the MA order 𝑞. For a pure AR model we set the last two to zero. We start with the simplest one, (1, 0, 0), on the differenced series.</p>
+<pre><code>model = SARIMAX(train_st, order=(1, 0, 0)).fit(disp=False)
+changes = model.forecast(steps=12)</code></pre>
+  <p>The AR(1) coefficient is 0.446. The forecasts are monthly changes, and they die out quickly: −31.2, −13.9, −6.2 and then almost zero. This is how AR behaves: each forecast is a fraction (here 0.446) of the previous one, so the memory fades away. To get units back we <b>integrate</b>: add up the forecast changes and start from the last known value.</p>
+  <div class="eq">ŷ<sub>T+h</sub> = y<sub>T</sub> + Σ<sub>j=1..h</sub> Δŷ<sub>T+j</sub></div>
+  <p>If I know your bank balance today and the amount that goes in or out every month, I can rebuild the balance for every future month: a cumulative sum plus the last value does exactly that.</p>
+  <div class="card viz"><span class="tag">Visualizer · AR forecasts of 2024</span>
+    <div class="btnrow" id="r_btns" role="group" aria-label="AR order"><button data-k="AR(1)" aria-pressed="true">AR(1)</button><button data-k="AR(2)" aria-pressed="false">AR(2)</button><button data-k="AR(3)" aria-pressed="false">AR(3)</button></div>
+    <div class="ct">Forecast changes</div><div id="r_chg"></div>
+    <div class="ct" style="margin-top:10px">Integrated forecast, in units</div><div id="r_chart"></div><div id="r_lg"></div>
+    <div class="kpi" id="r_kpi" aria-live="polite"></div>
+    <p id="r_msg" class="sub" style="margin:6px 0 0"></p>
+  </div>
+  <p>The AR(1) MAPE is 16.78%, far above the target of 5%. The forecast is almost a flat line because the forecast changes shrink to zero, while the real 2024 has a large summer peak. AR(2) cuts the MAPE from 16.78% to 10.56%. Its coefficients, 0.665 and −0.491, are almost the same as our own regression (0.654 and −0.489); the small gap comes from the estimation method (SARIMAX uses maximum likelihood) and from the rows used, because our table dropped the first three months. AR(3) gives 11.19%, slightly worse: its third coefficient is only −0.136, which agrees with the small PACF bar at lag 3.</p>
+  <p>The clean rule is: if the ACF decays gradually and the PACF cuts off after lag 𝑘, an AR(𝑘) model is a candidate. Here the ACF has large bars far out (lag 12 is the biggest) because the seasonality is still inside, so the plot does not give a perfectly clean answer. This is where a human judgement call is needed: we read the first few lags for the short memory and treat the later bars as leftover season.</p>
+  <div class="card viz"><span class="tag">Visualizer · ACF and PACF of the changes</span>
+    <div class="grid2"><div><div class="ct">ACF</div><div id="x_acf"></div></div><div><div class="ct">PACF</div><div id="x_pacf"></div></div></div>
+  </div>
+  <div class="faq"><b>The PACF has big bars at lag 8 and lag 12. Should we use AR(12)?</b><br>We could, and it would capture part of the season. But it costs twelve coefficients, most of them for lags that carry little. Section 6 shows a cheaper way: a few terms placed exactly at the seasonal lags.</div>
+</section>
+
+<section id="ma">
+  <div class="kicker">4 · Memory of surprises</div>
+  <h2>Moving average models: memory of past surprises</h2>
+  <p>AR uses past values as features. What if we use past <b>errors</b> instead? Every month differs from what we expected, and that surprise is a new number that is unique to each point, so it can be a feature too. This is the moving average model.</p>
+  <div class="callout"><b class="h">Important</b>This has nothing to do with moving average smoothing from Class 2. Only the name is the same. There we averaged past values; here we regress on past forecast errors.</div>
+  <div class="eq">ŷ<sub>t</sub> = μ + m<sub>1</sub>e<sub>t−1</sub>, &nbsp; e<sub>t−1</sub> = y<sub>t−1</sub> − ŷ<sub>t−1</sub><br>
+    ŷ<sub>t</sub> = μ + m<sub>1</sub>e<sub>t−1</sub> + m<sub>2</sub>e<sub>t−2</sub> + ⋯ + m<sub>q</sub>e<sub>t−q</sub>, &nbsp; y<sub>t</sub> = ŷ<sub>t</sub> + ε<sub>t</sub></div>
+  <div class="tw"><table><tr><th>Symbol</th><th>Meaning</th></tr><tr><td>μ</td><td>mean level of the (stationary) series</td></tr><tr><td>e<sub>t−1</sub></td><td>the error, or surprise, at time 𝑡−1: actual minus forecast</td></tr><tr><td>m<sub>1</sub>, …, m<sub>q</sub></td><td>constants learnt from data</td></tr><tr><td>ε<sub>t</sub></td><td>the part that is truly random and cannot be helped</td></tr><tr><td>q</td><td>the hyperparameter of the MA(q) model</td></tr></table></div>
+  <p>A first intuition is "how far was last month from the average". The model sharpens this: the error is measured from its own forecast for that month, so errors are computed one after another, from the start of the series. <b>AR remembers what happened. MA remembers how surprised we were.</b> A shop that sold far more than planned last week adjusts this week's plan because of the surprise, and after a few weeks the surprise is forgotten.</p>
+  <h3>The textbook signatures</h3>
+  <p>Before using real data, look at two simulated series whose true type we know: an AR(2) (y<sub>t</sub> = 0.5y<sub>t−1</sub> + 0.3y<sub>t−2</sub> + e<sub>t</sub>) and an MA(2) (y<sub>t</sub> = e<sub>t</sub> + 0.7e<sub>t−1</sub> + 0.5e<sub>t−2</sub>), each with 500 points after the warm-up.</p>
+  <div class="card viz"><span class="tag">Visualizer · mirror-image footprints</span>
+    <div class="btnrow" id="m_btns" role="group" aria-label="Simulated model"><button data-k="ar" aria-pressed="true">Simulated AR(2)</button><button data-k="ma" aria-pressed="false">Simulated MA(2)</button></div>
+    <div class="grid2"><div><div class="ct">ACF</div><div id="m_acf"></div></div><div><div class="ct">PACF</div><div id="m_pacf"></div></div></div>
+    <p id="m_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <div class="tw"><table><tr><th>Model</th><th>ACF</th><th>PACF</th></tr><tr><td>AR(p)</td><td>decays gradually</td><td>cuts off after lag p</td></tr><tr><td>MA(q)</td><td>cuts off after lag q</td><td>decays gradually</td></tr></table></div>
+  <h3>MA by hand</h3>
+  <p>For MA(1) on the monthly changes (with μ = 0, the SARIMAX default), the errors come out of a simple loop: error = actual − m<sub>1</sub> × previous error.</p>
+<pre><code>error = 0.0
+for value in train_st:
+    error = value - m1 * error      # actual minus what the model expected</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · by hand vs library</span>
+    <div class="tw"><table><tr><th></th><th class="num">By hand</th><th class="num">Library</th></tr><tr><td>Last error (m₁ = 0.689)</td><td class="num">227.97</td><td class="num">227.97</td></tr><tr><td>Next forecast</td><td class="num">157.14</td><td class="num">157.14</td></tr></table></div>
+    <p class="sub" style="margin:6px 0 0">The five-step library forecast is 157.1, then exactly zero. An MA(1) model remembers only one past surprise, and two months ahead there is no known surprise left. So <b>an MA(q) forecast is flat at the mean after q steps</b>. AR memory fades gradually; MA memory stops sharply.</p>
+  </div>
+  <div class="card viz"><span class="tag">Visualizer · MA models on VoltNest</span>
+    <div class="btnrow" id="q_btns" role="group" aria-label="MA order"><button data-k="MA(1)" aria-pressed="false">MA(1)</button><button data-k="MA(2)" aria-pressed="false">MA(2)</button><button data-k="MA(3)" aria-pressed="true">MA(3)</button></div>
+    <div id="q_chart"></div><div id="q_lg"></div>
+    <div class="kpi" id="q_kpi" aria-live="polite"></div>
+    <p id="q_msg" class="sub" style="margin:6px 0 0"></p>
+  </div>
+  <p>The ACF plot of the changes has bars outside the band at lags 1 to 4 and again at the seasonal lags, so there is no clear cut-off, and we try a few values by hand. MA(1) gives 11.79% and MA(2) gives 11.80%: the second coefficient is almost zero (−0.009), so it adds nothing and the two lines lie on top of each other. MA(3) drops the error to 7.35%, with a large third coefficient (−0.869). The plot could not have told us this clearly; for MA we often need to try several values and judge them on data the model has not seen.</p>
+  <div class="callout"><b class="h">Note</b>We are using 2024 to look at many models. That is fine for learning how they behave, but choosing the winner this way would mean tuning on the test year. The later sections fix this.</div>
+  <details><summary>Practice · Rebuild the MA errors yourself</summary><div class="dbody">
+    <ol><li>Prompt an assistant: "Write a Python function ma_forecast(series, coefs, steps) for an MA(q) model with zero mean. Compute the errors recursively as e[t] = y[t] - sum(coefs[i] * e[t-1-i]), starting from zero errors, then forecast steps values, treating future errors as zero. Do not use statsmodels."</li>
+    <li><b>Verify, do not trust:</b> fit <code>SARIMAX(train_st, order=(0, 0, 2))</code> and pass its <code>maparams</code> to your function. Your first five forecasts must be 158.5, −1.9, 0, 0, 0, the same as the library's <code>forecast(5)</code>. If values after step 2 are not zero, the code is using future errors wrongly. Then try q = 3 and notice a small difference of a few units.</li>
+    <li><b>Integrate:</b> add the function and a two-column table (yours and the library) for q = 2 and q = 3 to the notebook.</li></ol>
+    <p style="margin:0"><b>Reflect:</b> the errors at the start of the series are unknown. Why would the guess made for them matter more for some coefficients than for others?</p></div></details>
+</section>
+
+<section id="arima">
+  <div class="kicker">5 · Putting the two together</div>
+  <h2>ARMA, stationarity and ARIMA</h2>
+  <h3>ARMA: both memories together</h3>
+  <p>Combine the two ideas: past values and past errors. This is <b>ARMA(p, q)</b>, where 𝑝 is the AR order and 𝑞 is the MA order. They do not have to be equal. In code, 𝑝 and 𝑞 are the first and third numbers of <code>order</code>.</p>
+  <div class="eq">ŷ<sub>t</sub> = c + α<sub>1</sub>y<sub>t−1</sub> + ⋯ + α<sub>p</sub>y<sub>t−p</sub> + m<sub>1</sub>e<sub>t−1</sub> + ⋯ + m<sub>q</sub>e<sub>t−q</sub><br>y<sub>t</sub> = c + Σ<sub>i=1..p</sub> α<sub>i</sub>y<sub>t−i</sub> + Σ<sub>j=1..q</sub> m<sub>j</sub>e<sub>t−j</sub> + ε<sub>t</sub></div>
+  <h3>Why does ARMA need a stationary series?</h3>
+  <p>ARMA learns one mean and one set of weights and assumes that they hold at all times. Its long-range forecast always returns to that mean. If the level of the series keeps moving, there is no such mean. See what happens when we ignore this and fit ARMA(2, 2) with a constant on the raw units.</p>
+  <div class="card viz"><span class="tag">Visualizer · ARMA on a non-stationary series</span>
+    <div id="w2_chart"></div><div id="w2_lg"></div>
+    <div class="kpi"><div><b>Forecast after 1 month</b><span>3,634</span></div><div><b>After 12 months</b><span>3,154</span></div><div><b>After 60 months</b><span>3,129</span></div><div><b>Last 12 train months avg</b><span>3,985</span></div><div><b>MAPE 2024</b><span>21.15%</span></div></div>
+    <p class="sub" style="margin:6px 0 0">The forecast slides from 3,634 units down to about 3,154 after a year and then stays near 3,129 for good, far below the recent level of the business. It drifts back towards an old average, and the MAPE on 2024 is the worst so far. This is why the series must be stationary before ARMA is applied.</p>
+  </div>
+  <p>Now use ARMA correctly, on the changes: ARMA(3, 3) reaches <b>7.25%</b>, a little better than the best pure model, MA(3) at 7.35%. We differenced by hand before the model and integrated by hand after it.</p>
+  <div class="card quiz" data-q="1"></div>
+  <h3>ARIMA: let the model do the differencing</h3>
+  <p>When the series is not stationary, the recipe is: (1) difference the series 𝑑 times to remove the trend, (2) fit ARMA(p, q) to the result, (3) integrate the forecasts 𝑑 times to bring the trend back. This is <b>ARIMA(p, d, q)</b>, where the I stands for "integrated":</p>
+  <div class="eq">ARIMA(p, d, q) = Integrate d times [ AR(p) + MA(q) on the series differenced d times ]</div>
+  <p>Use 𝑑 = 1 for a roughly linear trend and 𝑑 = 2 for a curved (quadratic) trend. With 𝑑 = 2, integrating by hand means two cumulative sums, each with its own starting value, which is easy to get wrong. Passing 𝑑 in <code>order</code> lets the library do it. Differencing is taking off your shoes at the door, ARMA is the work done inside, and integration is putting the shoes back on; ARIMA does all three, so you cannot forget your shoes.</p>
+<pre><code>for order in [(0, 1, 1), (3, 1, 3), (3, 2, 3)]:
+    fit = SARIMAX(train, order=order).fit(disp=False)    # raw units go in, no manual cumsum
+    forecast = fit.forecast(steps=12)</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · ARIMA on raw units</span>
+    <div class="btnrow" id="i_btns" role="group" aria-label="ARIMA order"><button data-k="ARIMA(0, 1, 1)" aria-pressed="false">ARIMA(0,1,1)</button><button data-k="ARIMA(3, 1, 3)" aria-pressed="true">ARIMA(3,1,3)</button><button data-k="ARIMA(3, 2, 3)" aria-pressed="false">ARIMA(3,2,3)</button></div>
+    <div id="i_chart"></div><div id="i_lg"></div>
+    <div class="kpi" id="i_kpi" aria-live="polite"></div>
+    <p id="i_msg" class="sub" style="margin:6px 0 0"></p>
+  </div>
+</section>
+
+<section id="sarima">
+  <div class="kicker">6 · Seasonal lags</div>
+  <h2>SARIMA: seasonal lags, P, D, Q and s</h2>
+  <p>To handle seasonality with ARIMA we would have to difference at the seasonal period (y<sub>t</sub> − y<sub>t−s</sub>) to remove the season, fit AR and MA terms, and add the season back to the forecasts. Try it by hand once, and compare with the library.</p>
+<pre><code>seasonal_change = train.diff(12).dropna()                           # step 1: remove the season
+inner = SARIMAX(seasonal_change, order=(2, 1, 1)).fit(disp=False)    # step 2: ARIMA on what is left
+by_hand = inner.forecast(12) + train[-12:].values                    # step 3: add last year's values back
+library = SARIMAX(train, order=(2, 1, 1), seasonal_order=(0, 1, 0, 12)).fit(disp=False).forecast(12)</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · by hand vs library</span>
+    <div class="tw"><table><tr><th>Month</th><th class="num">By hand</th><th class="num">Library</th></tr><tr><td>Jan 2024</td><td class="num">3,583.4</td><td class="num">3,583.2</td></tr><tr><td>Feb 2024</td><td class="num">3,737.8</td><td class="num">3,737.6</td></tr><tr><td>MAPE 2024</td><td class="num">7.59%</td><td class="num">7.60%</td></tr></table></div>
+    <p class="sub" style="margin:6px 0 0">The two routes agree within 0.2 units. It works, but it is tiring and easy to get wrong. SARIMA does all of it inside the model, and it can also add AR and MA terms at the seasonal lags.</p>
+  </div>
+  <p>SARIMA has 7 hyperparameters: <b>(p, d, q) × (P, D, Q)<sub>s</sub></b>.</p>
+  <div class="tw"><table><tr><th>Non-seasonal part</th><th>Seasonal part</th></tr><tr><td>p: AR order</td><td>P: seasonal AR order</td></tr><tr><td>d: number of differences</td><td>D: number of seasonal differences</td></tr><tr><td>q: MA order</td><td>Q: seasonal MA order</td></tr><tr><td colspan="2">s: length of the season</td></tr></table></div>
+  <div class="callout"><b class="h">Note</b>The function is called SARIMAX: Seasonal AutoRegressive Integrated Moving Average with eXogenous variables. The X means outside features, which we do not use today.</div>
+  <h3>The season length s</h3>
+  <p>We find 𝑠 from the ACF of the de-trended series, as in Class 5. A second option is to treat 𝑠 as a hyperparameter and compare a few values on a validation year (2023), keeping 2024 out of the choice.</p>
+  <div class="card viz"><span class="tag">Visualizer · validating s on 2023</span>
+    <div id="s_bars"></div>
+    <p class="sub" style="margin:6px 0 0">The ACF of the changes at lags 6, 12 and 24 is −0.04, 0.85 and 0.78, so 𝑠 = 12. The validation run agrees: 𝑠 = 12 has the lowest MAPE on 2023 (5.96%, against 6.21% or more for the others) and a clearly lower RMSE. Reading the ACF is the sensible first step, and the loop is a useful check.</p>
+  </div>
+  <h3>How seasonal lags work</h3>
+  <p>For a normal AR term, order 2 means lags 𝑡−1 and 𝑡−2: in March 2024, that is February 2024 and January 2024. For a seasonal term, order 2 means lags 𝑡−𝑠 and 𝑡−2𝑠: in March 2024, that is March 2023 and March 2022.</p>
+  <ul><li><b>P</b> is an auto regression on the same month in earlier years: Σ β<sub>i</sub>y<sub>t−is</sub></li>
+  <li><b>Q</b> is a moving average on the errors of the same month in earlier years: Σ c<sub>i</sub>e<sub>t−is</sub></li>
+  <li><b>D</b> is seasonal differencing: for D = 1, y′<sub>t</sub> = y<sub>t</sub> − y<sub>t−12</sub> (compare d = 1: y′<sub>t</sub> = y<sub>t</sub> − y<sub>t−1</sub>)</li></ul>
+  <div class="card viz"><span class="tag">Visualizer · which past months does the forecast use?</span>
+    <div class="sub">Forecasting y<sub>100</sub> with s = 12. Move the orders and see which past points contribute.</div>
+    <div class="ctrl"><div><label for="l_p">p: <output id="l_po"></output></label><input id="l_p" type="range" min="0" max="4" value="4"></div><div><label for="l_P">P: <output id="l_Po"></output></label><input id="l_P" type="range" min="0" max="3" value="3"></div><div><label for="l_q">q: <output id="l_qo"></output></label><input id="l_q" type="range" min="0" max="4" value="4"></div><div><label for="l_Q">Q: <output id="l_Qo"></output></label><input id="l_Q" type="range" min="0" max="3" value="3"></div></div>
+    <div id="l_chart"></div><div id="l_msg" class="sub" aria-live="polite" style="margin:6px 0 0"></div>
+  </div>
+  <p>The small letters ask "what happened in the last few months". The capital letters ask "what happened in this same month in the last few years".</p>
+  <p>One detail: the library multiplies the non-seasonal and seasonal parts, so extra cross terms appear. Check it on a small model with p = 1 and P = 1 (no differencing, only for reading the lags): α<sub>1</sub> = 0.9552 and β<sub>1</sub> = 0.9437 give the weights below.</p>
+  <div class="card viz"><span class="tag">Visualizer · the cross term</span>
+    <div class="tw"><table><tr><th>Lag</th><th class="num">Weight on y(t−lag)</th><th>Where it comes from</th></tr><tr><td>1</td><td class="num">+0.9552</td><td>α₁</td></tr><tr><td>12</td><td class="num">+0.9437</td><td>β₁</td></tr><tr><td>13</td><td class="num">−0.9014</td><td>−α₁β₁ (free cross term)</td></tr></table></div>
+    <div class="eq" style="margin-top:8px">y<sub>t</sub> = α<sub>1</sub>y<sub>t−1</sub> + β<sub>1</sub>y<sub>t−12</sub> − α<sub>1</sub>β<sub>1</sub>y<sub>t−13</sub> + ε<sub>t</sub></div>
+    <p class="sub" style="margin:0">The model uses three lags, not two, and the cross terms come for free, with no extra parameters.</p>
+  </div>
+  <p>Now fit a full SARIMA with <code>order=(3, 1, 3)</code> and <code>seasonal_order=(1, 1, 1, 12)</code>. The seasonal tuple is written in the order (P, D, Q, s).</p>
+  <div class="card viz"><span class="tag">Visualizer · adding the seasonal part</span>
+    <div class="btnrow" id="z_btns" role="group" aria-label="Model"><button data-k="ARIMA(3, 1, 3)" aria-pressed="false">ARIMA(3,1,3)</button><button data-k="SARIMA(3,1,3)(1,1,1,12)" aria-pressed="true">SARIMA(3,1,3)(1,1,1,12)</button></div>
+    <div id="z_chart"></div><div id="z_lg"></div><div class="kpi" id="z_kpi" aria-live="polite"></div>
+    <div class="tw" style="margin-top:8px"><table><tr><th>maxiter</th><th>Converged</th><th class="num">AIC</th><th class="num">MAPE 2024</th></tr><tr><td>50 (default)</td><td>False</td><td class="num">1,654.9</td><td class="num">2.54%</td></tr><tr><td>500</td><td>True</td><td class="num">1,654.8</td><td class="num">2.59%</td></tr></table></div>
+    <p class="sub" style="margin:6px 0 0">Adding the seasonal part takes the MAPE from 7.28% to about 2.6%, which removes almost two thirds of the error, and the forecast now follows the summer peak. With the default 50 optimiser steps the fit had not finished (converged = False), and we had hidden the warnings; with 500 steps it converged and the forecast changed a little. Always check this flag.</p>
+  </div>
+  <div class="callout"><b class="h">Important</b>SARIMA can hold only one seasonal period 𝑠. A daily series with both a weekly and a yearly cycle needs other tools.</div>
+  <details><summary>Practice · Expand a SARIMA equation</summary><div class="dbody">
+    <p>The model in the cold open was SARIMA(2,1,1)(0,1,1)<sub>12</sub>. You should be able to say which past values and errors it uses.</p>
+    <ol><li>Prompt an assistant: "Write the full equation of a SARIMA(2,1,1)(0,1,1,12) model with the backshift operator, then expand it so that y_t is on the left side alone. List every lag of y and every lag of the error that appears."</li>
+    <li><b>Verify, do not trust:</b> fit the model on <code>train</code> and print the lags with non-zero values in <code>polynomial_ar</code>, <code>polynomial_ma</code> and <code>polynomial_seasonal_ma</code> of the result, and multiply the polynomials with <code>np.convolve</code>. The error lags must be 1, 12 and 13. For 𝑦, remember that <code>polynomial_ar</code> does not include the two differences, so multiply by (1−B)(1−B¹²) yourself; lags such as 15 should appear.</li>
+    <li><b>Integrate:</b> add the checked equation to the notebook in LaTeX.</li></ol>
+    <p style="margin:0"><b>Reflect:</b> how can a model with only four weights refer to so many past months?</p></div></details>
+  <div class="card quiz" data-q="2"></div>
+</section>
+
+<section id="orders">
+  <div class="kicker">7 · Evidence, not guesswork</div>
+  <h2>Choosing orders: ACF/PACF guide, grid search and overfitting</h2>
+  <p>We now have seven numbers to choose. Work in this order: (1) 𝑠 from the calendar and the ACF; (2) 𝑑 and 𝐷: the fewest differences that make the series look stationary; (3) 𝑝, 𝑞, 𝑃, 𝑄 from the ACF and PACF, then confirm with a search.</p>
+  <p>For VoltNest, 𝑠 = 12, and we take 𝑑 = 1 and 𝐷 = 1. (The summer swing stays about the same size over the years. If it grew with the level, we would take the log first, as in Class 5.) Plot the doubly differenced series.</p>
+  <div class="card viz"><span class="tag">Visualizer · ACF and PACF after diff(1) and diff(12)</span>
+    <div class="grid2"><div><div class="ct">ACF</div><div id="g_acf"></div></div><div><div class="ct">PACF</div><div id="g_pacf"></div></div></div>
+    <div class="tw" style="margin-top:8px"><table><tr><th>Lag</th><th class="num">1</th><th class="num">2</th><th class="num">3</th><th class="num">12</th><th class="num">24</th></tr><tr><td>ACF</td><td class="num">0.263</td><td class="num">−0.257</td><td class="num">−0.319</td><td class="num">−0.499</td><td class="num">−0.019</td></tr><tr><td>PACF</td><td class="num">0.265</td><td class="num">−0.356</td><td class="num">−0.170</td><td class="num">−0.370</td><td class="num">−0.284</td></tr></table></div>
+    <p class="sub" style="margin:6px 0 0">Band ±0.164. Seasonal lags: the ACF is −0.499 at lag 12 and almost zero (−0.019) at lag 24, while the PACF is still −0.284 at lag 24. This points to <b>Q = 1, P = 0</b>. Early lags: both plots are outside the band at lags 1 to 3 with no sharp cut, so small values of p and q are candidates, and the plot alone cannot pick them.</p>
+  </div>
+  <div class="tw"><table><tr><th>What you see</th><th>Candidate</th></tr>
+    <tr><td>ACF decays, PACF cuts off after lag k</td><td>AR order k</td></tr><tr><td>PACF decays, ACF cuts off after lag k</td><td>MA order k</td></tr><tr><td>Both decay</td><td>a mix: try small p and q in a search</td></tr>
+    <tr><td>Spike in the ACF at lag s only, PACF fading over s, 2s</td><td>Q = 1</td></tr><tr><td>Spike in the PACF at lag s only, ACF fading over s, 2s</td><td>P = 1</td></tr></table></div>
+  <h3>Grid search</h3>
+  <p>A grid search fits every combination and ranks them by the AIC from Class 4, which rewards a good fit and charges for every parameter (lower is better). We keep 𝑑 = 1, 𝐷 = 1 fixed and try 𝑝, 𝑞 ∈ {0, 1, 2} and 𝑃, 𝑄 ∈ {0, 1}: 36 models.</p>
+  <div class="callout"><b class="h">Important</b>AIC values are comparable only between models fitted to the same differenced data. Never use AIC to compare different values of 𝑑 or 𝐷.</div>
+  <div class="card viz"><span class="tag">Visualizer · the 36-model grid</span>
+    <div class="btnrow"><button id="g_all" aria-pressed="false">Show all 36 rows</button></div>
+    <div class="tw"><table id="g_tab"></table></div>
+    <p class="sub" style="margin:6px 0 0">The lowest AIC, 1648.8, belongs to SARIMA(2,1,1)(0,1,1,12), with 5 parameters (2 AR, 1 MA, 1 seasonal MA and the noise variance). It agrees with the plot reading of Q = 1 and P = 0. The next four models are within about 2 to 5 AIC points, and most of them only add a term to it. Two of the 36 models did not converge, which is why the table has that column. The grid used only the training data.</p>
+  </div>
+  <h3>Overfitting: why not use large p and q?</h3>
+  <p>More parameters can always fit the training data a little better. Increase 𝑝 = 𝑞 = 𝑘, train up to 2022, and score on 2023.</p>
+  <div class="card viz"><span class="tag">Visualizer · more terms, more noise</span>
+    <div class="btnrow" id="o_btns" role="group" aria-label="Measure"><button data-k="2" aria-pressed="false">Train RMSE</button><button data-k="5" aria-pressed="true">2023 MAPE</button><button data-k="3" aria-pressed="false">AIC</button><button data-k="4" aria-pressed="false">BIC</button></div>
+    <div id="o_chart"></div>
+    <div class="tw"><table id="o_tab"></table></div>
+    <p class="sub" style="margin:6px 0 0">The training RMSE falls every time, from 83.1 to 69.6 units, so it can never tell us to stop. The 2023 error goes from 7.73% at k = 0 to its best value of 5.69% at k = 3 (not in a straight line, since k = 1 is at 7.99%), then rises again to 5.76% and 6.20%. Past that point the extra weights are fitting noise: <b>overfitting</b>. BIC is lowest at k = 2 and AIC at k = 4; both charge for parameters, BIC charges more.</p>
+  </div>
+  <p>A student who memorises last year's paper gets full marks on last year's paper. Large p and q do the same with last year's data.</p>
+  <div class="card quiz" data-q="3"></div>
+</section>
+
+<section id="auto">
+  <div class="kicker">8 · Automatic search</div>
+  <h2>Automatic order search with auto_arima</h2>
+  <p><code>auto_arima</code> from the <code>pmdarima</code> library automates the three steps: it chooses 𝑑 with a statistical test (KPSS by default) and 𝐷 with a seasonal test (OCSB by default); it searches over 𝑝, 𝑞, 𝑃, 𝑄 (with <code>stepwise=True</code> it starts from a few models and moves to neighbours that lower the AIC, so it does not fit every combination); and it returns the best model found.</p>
+<pre><code>pm.arima.ndiffs(train, test="kpss")            # d
+pm.arima.nsdiffs(train, m=12, test="ocsb")     # D
+auto = pm.auto_arima(train, seasonal=True, m=12, stepwise=True, trace=True,
+                     suppress_warnings=True, error_action="ignore")</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · what auto_arima chose</span>
+    <div class="kpi"><div><b>d (KPSS)</b><span>1</span></div><div><b>D (OCSB)</b><span>0</span></div><div><b>Best model</b><span style="font-size:19px">ARIMA(0,1,1)(1,0,2)[12]</span></div><div><b>AIC</b><span>1,831.3</span></div><div><b>MAPE 2024</b><span>2.16%</span></div></div>
+    <p class="sub" style="margin:6px 0 0">The stepwise trace tried about 24 candidates; several show AIC = inf, which means they were rejected, for example because the fit was unstable.</p>
+  </div>
+  <p>Three things deserve attention:</p>
+  <ul><li>It chose <b>D = 0</b>. The seasonal test asked for no seasonal difference, so the search handled the season with seasonal AR and MA terms. Our grid used D = 1.</li>
+  <li>Its AIC of 1831.3 <b>cannot be compared</b> with the grid's 1648.8, because the two models are fitted to differently differenced data. A lower or higher number here means nothing.</li>
+  <li>Lines with AIC = inf in the trace are candidates that were rejected.</li></ul>
+  <div class="faq"><b>If auto_arima has the best 2024 score, are we done?</b><br>No. 2024 is one year, and the cold open showed what one year can do. <code>auto_arima</code> is a fast way to get a good candidate. Its result still needs the residual checks and the repeated contest that follow.</div>
+  <div class="card quiz" data-q="4"></div>
+</section>
+
+<section id="resid">
+  <div class="kicker">9 · Is anything left?</div>
+  <h2>Residual diagnostics</h2>
+  <p>The residuals are actual minus fitted values. A good model has taken all the structure out, so the residuals should look like random noise:</p>
+  <div class="tw"><table><tr><th>Property</th><th>Why it matters</th><th>Check</th></tr>
+    <tr><td>Uncorrelated</td><td>a pattern left over is information the model missed</td><td>ACF of residuals, Ljung-Box test</td></tr>
+    <tr><td>Zero mean</td><td>otherwise the forecasts are biased high or low</td><td>mean, t-test</td></tr>
+    <tr><td>Normal</td><td>the usual forecast intervals assume it</td><td>histogram, Q-Q plot, Jarque-Bera test</td></tr></table></div>
+  <p>The Ljung-Box statistic adds up the squared autocorrelations r<sub>k</sub> of the residuals up to lag h. Its null hypothesis is "no autocorrelation". In all three tests, a <b>p-value above 0.05 is the result we hope for</b>.</p>
+  <div class="eq">Q<sub>LB</sub> = n(n+2) Σ<sub>k=1..h</sub> r<sub>k</sub>² / (n−k)</div>
+  <p>After squeezing an orange, you check the peel. If juice still drips out, you did not squeeze well. The residuals are the peel.</p>
+  <h3>A trap: the start-up residuals</h3>
+  <div class="card viz"><span class="tag">Visualizer · the first residuals</span>
+    <div class="ctrl"><div><label for="t_k">Drop the first <output id="t_ko"></output> residuals</label><input id="t_k" type="range" min="0" max="20" value="0"></div></div>
+    <div id="t_chart"></div><div class="kpi" id="t_kpi" aria-live="polite"></div>
+    <p class="sub" style="margin:6px 0 0">The first residual is 2,096, the whole sales figure of the first month: the model has no history yet. With d = 1 and D = 1, the first 1 + 12 = 13 residuals are start-up values. If we keep them, the normality test fails completely (p = 0.0000). Without them it passes (p = 0.20). <b>Always drop the first d + D×s residuals.</b></p>
+  </div>
+  <div class="card viz"><span class="tag">Visualizer · a model that passes, and models that fail</span>
+    <div class="btnrow" id="k_btns" role="group" aria-label="Model"></div>
+    <div class="tw"><table id="k_tab"></table></div>
+    <div id="k_acf"></div>
+    <p id="k_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <p>The grid winner passes all checks: zero mean (4.97 units against a standard deviation of 73.2, t-test p = 0.419), uncorrelated (Ljung-Box p-values of 0.589 and 0.363; the stricter version, which allows for the 4 fitted weights, still passes with 0.244 and 0.172), and normal (Jarque-Bera p = 0.20). In the diagnostic plots the standardised residuals show no trend, the histogram follows the normal curve, the Q-Q points lie close to the line, and the correlogram bars stay inside the band except a small one at lag 24 (about −0.19), which can happen by chance when 24 lags are checked.</p>
+  <p>ARIMA(3,1,3) fails on all three: the mean is 35.07 (p = 0.035), the Ljung-Box p-values are 0.0000, and Jarque-Bera is 0.001. The residual ACF has a tall bar at lag 12. The diagnostic says what is missing: a yearly term.</p>
+  <details><summary>Your turn · pass or fail?</summary><div class="dbody">
+    <p>Model A: <code>order=(1, 1, 0), seasonal_order=(0, 1, 1, 12)</code>. Model B: <code>order=(1, 1, 1), seasonal_order=(0, 1, 1, 12)</code>. Fit each on <code>train</code>, run <code>check_residuals</code> and compute its MAPE on <code>test</code>. Use the model buttons above to check your verdict.</p>
+    <p style="margin:0"><b>Model A fails:</b> the Ljung-Box p-value at lag 12 is 0.0121, so correlation is left in its residuals. <b>Model B passes, but only just:</b> 0.0568 and 0.0724 are close to 0.05. Model A scores 2.30% on 2024, better than the grid winner's 2.93%, even though it fails the check. A good score on one year and clean residuals are different questions, and we want a model that answers both well.</p></div></details>
+  <div class="callout"><b class="h">Note</b>Residual checks are a pass or fail gate for a model. Choosing between models that pass is the job of the next section.</div>
+</section>
+
+<section id="cv">
+  <div class="kicker">10 · A fair contest</div>
+  <h2>Rolling-origin cross-validation</h2>
+  <p>Here are all the models of the class, scored on 2024.</p>
+  <div class="card viz"><span class="tag">Visualizer · the leaderboard on 2024</span>
+    <div id="l2_chart"></div>
+    <p class="sub" style="margin:6px 0 0">The seasonal models are far ahead of the rest, between about 2% and 3%. Their order among themselves rests on one year that we have looked at many times, so it is not a fair way to pick between them.</p>
+  </div>
+  <p><b>Rolling-origin cross-validation</b> repeats the real forecasting task several times. Pick a point in the past (the origin), train on everything before it, forecast the next ℎ months, record the error, move the origin forward and repeat. The final score is the average:</p>
+  <div class="eq">CV score = (1/K) Σ<sub>k=1..K</sub> MAPE( y<sub>T<sub>k</sub>+1 : T<sub>k</sub>+h</sub>, ŷ<sub>T<sub>k</sub>+1 : T<sub>k</sub>+h</sub> )</div>
+  <p>where T<sub>k</sub> is the last training month of fold 𝑘. The model never sees the future of its own fold. <b>Shuffled k-fold is not allowed</b>, for the reason we saw in Class 3: it trains on the future to predict the past. Instead of one exam, we give each model five exams from five different years, and in every exam it may study only what came before.</p>
+  <p>We keep 2024 aside and make five folds inside 2011 to 2023, each testing one year. <code>TimeSeriesSplit</code> builds them.</p>
+  <div class="card viz"><span class="tag">Visualizer · the five folds</span>
+    <div id="f_chart"></div>
+    <p class="sub" style="margin:6px 0 0">Five folds test 2019, 2020, 2021, 2022 and 2023. The training window expands from 96 to 144 months. (A sliding window, which drops old months and keeps a fixed length, is the alternative when old behaviour no longer applies.)</p>
+  </div>
+<pre><code>def rolling_origin(forecaster):
+    errors = {}
+    for tr_idx, te_idx in folds:
+        history, actual = development.iloc[tr_idx], development.iloc[te_idx]
+        predicted = np.asarray(forecaster(history))
+        errors[actual.index[0].year] = np.mean(np.abs(actual.values - predicted) / actual.values) * 100
+    return pd.Series(errors)</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · the bar to beat</span>
+    <div id="b_chart"></div>
+    <p class="sub" style="margin:6px 0 0">The seasonal naive baseline from Class 3 ranges from 2.24% in 2023 to 9.69% in 2021. The same simple recipe looks excellent or poor depending on the year, which is why we average over folds. Every serious model must beat this bar.</p>
+  </div>
+  <details><summary>Practice · More origins, same rules</summary><div class="dbody">
+    <p>Five folds are few. You can move the origin every 6 months and get more evidence, if the code does not leak.</p>
+    <ol><li>Prompt an assistant: "Write a Python function rolling_origin_step(series, forecaster, first_train_size, horizon, step) for a monthly pandas Series. It must train on series.iloc[:origin], forecast the next horizon months, move the origin forward by step, stop when a full test window no longer fits, and return the MAPE of each fold. No shuffling and no data after the origin may reach the forecaster."</li>
+    <li><b>Verify, do not trust:</b> run it on <code>development</code> with <code>first_train_size=96</code> and <code>horizon=12</code>. With <code>step=12</code> it must give the same five numbers as <code>rolling_origin</code>. With <code>step=6</code> it must give 9 folds, with an average of about 4.34% for <code>hw_forecast</code> and 3.81% for <code>sarima_forecast</code>. Print the last training date of every fold and check that it is earlier than the first test date.</li>
+    <li><b>Integrate:</b> add the function and the 9-fold table to the notebook.</li></ol>
+    <p style="margin:0"><b>Reflect:</b> neighbouring folds with a 6-month step share test months. Why does that make 9 folds weaker evidence than 9 separate years?</p></div></details>
+  <div class="card quiz" data-q="5"></div>
+</section>
+
+<section id="final">
+  <div class="kicker">11 · Putting it together on VoltNest</div>
+  <h2>SARIMA vs Holt-Winters: the fair contest</h2>
+  <p>Now the fair contest. Five recipes, the same five folds: <b>seasonal naive</b> (the bar), <b>Holt-Winters</b> (Analyst 1), <b>SARIMA(2,1,1)(0,1,1,12)</b>, the grid winner (Analyst 2), <b>SARIMA(3,1,3)(1,1,1,12)</b>, the larger model, and <b>auto_arima</b>, which searches again inside every fold, because we are testing the whole procedure.</p>
+  <div class="card viz"><span class="tag">Visualizer · five recipes, five exams</span>
+    <div class="btnrow" id="v_btns" role="group" aria-label="View"><button data-k="year" aria-pressed="true">By fold</button><button data-k="mean" aria-pressed="false">Mean and worst fold</button></div>
+    <div class="ctrl"><div><label for="v_t">Target: MAPE ≤ <output id="v_to"></output>%</label><input id="v_t" type="range" min="1" max="10" step="0.5" value="5"></div></div>
+    <div id="v_chart"></div><div id="v_lg"></div>
+    <div class="tw"><table id="v_tab"></table></div>
+    <p id="v_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <p>Read the result in four steps:</p>
+  <ol><li>Every model beats seasonal naive on average, so all of them earn their place.</li>
+  <li><b>SARIMA vs Holt-Winters:</b> the grid-winner SARIMA averages 4.01% and Holt-Winters 4.23%. SARIMA wins 2019, 2020 and 2023; Holt-Winters wins 2021 and 2022. This is an edge, not a knockout.</li>
+  <li>The larger SARIMA has the lowest average, 0.24 points ahead of the grid winner. That margin is tiny compared with its own swing from one year to another (1.80% to 6.49%).</li>
+  <li>No recipe stays below 5% in every year. In 2021 all four model-based recipes were above it.</li></ol>
+  <div class="faq"><b>The larger SARIMA has the lowest average. Why might we still choose the smaller one?</b><br>The gap is far smaller than the year-to-year variation, so five folds give weak evidence for either one. The smaller model has 5 estimated numbers against 9, it converged on the training data with the default settings, and its residuals passed every check. When the evidence is this close, prefer the simpler one. Choosing the larger model is defensible too, as long as the reason is stated.</div>
+  <h3>One last check against leakage</h3>
+  <p>The grid in Section 7 used data up to 2023, which includes the test years of the folds. Would we have picked the same order using only data before the first fold? Using only 2011 to 2018, the same grid picks <b>(2,1,1)(0,1,1,12)</b> again. The choice did not depend on peeking at the fold years.</p>
+  <h3>The 2024 forecast</h3>
+  <div class="card viz"><span class="tag">Visualizer · VoltNest 2024</span>
+    <div id="p_chart"></div><div id="p_lg"></div>
+    <div class="kpi"><div><b>Holt-Winters 2024</b><span>2.75%</span></div><div><b>SARIMA 2024</b><span>2.93%</span></div><div><b>Months inside the 95% range</b><span>11 of 12</span></div></div>
+    <div class="tw" style="margin-top:8px"><table id="p_tab"></table></div>
+    <p class="sub" style="margin:6px 0 0">Holt-Winters is slightly ahead on this single year, although SARIMA was ahead on the five-fold average. Both are well inside the 5% target. The SARIMA 95% range widens as we forecast further ahead.</p>
+  </div>
+  <div class="callout"><b class="h">Important</b>We looked at 2024 many times during this class, so it is no longer a clean test. The choice rests on the five folds and the residual checks, and 2024 is shown as a final illustration.</div>
+</section>
+
+<section id="recap">
+  <div class="kicker">Recap</div>
+  <h2>Key takeaways</h2>
+  <ul>
+    <li><b>AR(p)</b> is a regression on the last 𝑝 values. <b>MA(q)</b> is a regression on the last 𝑞 forecast errors, and it is unrelated to moving average smoothing.</li>
+    <li>AR weights are learnt freely; SES weights decay exponentially from one α.</li>
+    <li>PACF cut-off suggests 𝑝; ACF cut-off suggests 𝑞. When both decay, search.</li>
+    <li>ARMA needs a stationary series. ARIMA differences 𝑑 times, fits ARMA and integrates back.</li>
+    <li>SARIMA adds (P, D, Q)<sub>s</sub>, which look back whole seasons. It handles one season length.</li>
+    <li>Choose 𝑑 and 𝐷 first; compare AIC only between models with the same differencing.</li>
+    <li>Large 𝑝 and 𝑞 always lower the training error and can raise the forecast error.</li>
+    <li><code>auto_arima</code> gives a fast candidate, not a final answer.</li>
+    <li>Good residuals are uncorrelated, zero mean and normal; drop the start-up residuals first.</li>
+    <li>Compare models with rolling-origin cross-validation, and prefer the simpler model when the gap is small.</li>
+  </ul>
+  <h3>Common mistakes</h3>
+  <div class="grid2">
+    <div class="mini">Fitting AR, MA or ARMA to a series that is not stationary.</div>
+    <div class="mini">Forgetting to integrate the forecasts of a differenced series.</div>
+    <div class="mini">Ignoring the convergence flag because warnings are hidden.</div>
+    <div class="mini">Comparing AIC values across different 𝑑 or 𝐷.</div>
+    <div class="mini">Testing the residuals with the start-up values included.</div>
+    <div class="mini">Picking a winner from one test year, or from a test year that was used for tuning.</div>
+  </div>
+  <div class="callout" style="margin-top:22px"><b class="h">Closing the VoltNest story</b>The planning head now has an answer to the two slides. Neither analyst was cheating, and neither had enough evidence. Over five years of fair tests, SARIMA(2,1,1)(0,1,1,12) averaged 4.01% MAPE against 4.23% for Holt-Winters, with clean residuals. The larger SARIMA averaged 3.76%, too close to justify its extra weights. VoltNest will forecast with this SARIMA, order stock using its range, and keep Holt-Winters running beside it as a challenger, because it won in two of the five test years and again on 2024. Both models are below the 5% target on average, but not in every year, so the planning head keeps a stock buffer for the hard years. That closes the VoltNest story. The X in SARIMAX is still unused: so far every model has learnt only from the past of the series itself. In Class 7 we look beyond the series.</div>
+</section>
+</main>
+
+<footer>Time Series &amp; Recommender System: Class 6 (Post-Read)</footer>
+
+<script>
+(function(){
+"use strict";
+const D={"y": [2096, 2202, 2610, 3096, 3413, 3145, 2624, 2426, 2559, 2771, 2312, 2056, 2134, 2356, 2778, 3245, 3459, 3131, 2702, 2551, 2647, 2803, 2409, 2230, 2286, 2481, 2849, 3265, 3557, 3279, 2847, 2694, 2717, 2906, 2434, 2166, 2224, 2339, 2778, 3158, 3376, 3161, 2680, 2579, 2578, 2747, 2330, 2157, 2375, 2422, 2803, 3256, 3477, 3043, 2566, 2423, 2528, 2746, 2507, 2339, 2363, 2508, 2920, 3453, 3777, 3463, 3065, 2832, 2822, 2961, 2596, 2365, 2554, 2723, 2986, 3308, 3602, 3388, 3078, 3153, 3227, 3279, 2713, 2579, 2718, 2865, 3201, 3607, 3952, 3665, 3160, 2927, 2866, 3045, 2728, 2735, 2897, 3087, 3402, 3700, 3876, 3530, 3245, 3090, 3186, 3313, 3007, 2900, 3021, 3155, 3475, 3920, 4159, 3748, 3170, 3063, 3296, 3537, 3140, 2975, 3205, 3387, 3709, 4183, 4481, 4271, 3803, 3541, 3482, 3821, 3652, 3487, 3537, 3771, 4081, 4406, 4709, 4395, 3919, 3770, 3868, 4183, 3840, 3703, 3668, 3789, 4134, 4479, 4679, 4359, 3976, 3763, 3813, 3990, 3618, 3548, 3740, 3983, 4331, 4658, 4878, 4595, 4153, 3938, 4002, 4238, 4084, 4085], "lagtab": [["2011-05-01", 486.0, 408.0, 106.0, 317.0], ["2011-06-01", 317.0, 486.0, 408.0, -268.0], ["2011-07-01", -268.0, 317.0, 486.0, -521.0], ["2011-08-01", -521.0, -268.0, 317.0, -198.0]], "sesw": [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625], "arw": [0.550428457319719, -0.4211022096945865, -0.17703970317283754, -0.11755656593364788, 0.0935636343274267, -0.2884143716299391], "ar1_changes": [-31.202829130668697, -13.908807796538673, -6.199916472667269, -2.763641918872214, -1.2319063796131866, -0.5491280609721565, -0.2447764151052803, -0.10911023793925277, -0.048636401583215846, -0.021679904687595265, -0.009663919450517406, -0.004307737533529148], "wrong": [3634.319762190078, 3542.0205064360825, 3452.881406344438, 3377.6339571805865, 3317.686301497688, 3271.275022439587, 3235.8819800731335, 3209.1127890817734, 3188.958584469985, 3173.823622750585, 3162.474349089799, 3153.9708265462004, 3147.6024628009172, 3142.834396079332, 3139.265024596313, 3136.5932228378088, 3134.593380659844, 3133.09654097191, 3131.976205520513, 3131.1376785868124, 3130.5100773852573, 3130.0403463313687, 3129.6887744997985, 3129.4256395900948, 3129.228695642657, 3129.0812925219825, 3128.9709683582814, 3128.8883960228604, 3128.8265946008105, 3128.7803392099586, 3128.7457192760803, 3128.719807922017, 3128.700414520865, 3128.685899493742, 3128.675035694745, 3128.6669046642255, 3128.660818979348, 3128.656264137212, 3128.6528550571666, 3128.6503035248834, 3128.6483938258134, 3128.6469645080024, 3128.6458947324363, 3128.6450940569302, 3128.6444947898626, 3128.6440462673145, 3128.6437105697814, 3128.6434593163403, 3128.6432712652368, 3128.6431305180386, 3128.6430251755373, 3128.642946331747, 3128.642887320966, 3128.642843154238, 3128.642810097568, 3128.6427853562427, 3128.6427668385513, 3128.6427529789507, 3128.642742605707, 3128.6427348418338], "acf_w": [1.0, 0.263209402743096, -0.25688022672523053, -0.3189424209281757, -0.14713170808230935, -0.08863639059127526, -0.05874720271992622, 0.1561672727670848, 0.13060206894495535, 0.18982332061862042, 0.10108723332535688, -0.2536366047380747, -0.49859852807229077, -0.10648513298033836, 0.23384428939750965, 0.20301397228954537, 0.09680743232109086, 0.04418480097048921, 0.09611528294119344, -0.13163236542615778, -0.13411269360524047, 0.01895181112026639, 0.07509981871456134, 0.15234272220040565, -0.019311307667838347, -0.002583152904870961, -0.194281208782087, -0.12512890849603234, 0.009833225652830886, 0.03561809571068424, 0.020435644763415736, 0.04974503129201429, 0.10126257045942208, -0.08096693373223025, -0.18139282560431622, -0.12197723605028549, 0.09089411074895257], "pacf_w": [1.0, 0.26506299008635725, -0.3557787481838872, -0.1697536052727172, -0.10875219290091617, -0.2088857568746001, -0.15577468475408354, 0.09851928061412037, -0.09928717388900675, 0.238704718854919, 0.09402565408023894, -0.2793171585047054, -0.3702398021063303, 0.10183955789800121, -0.10215098211101742, -0.04236086855500507, 0.04961153651191929, -0.07486127844931062, 0.18791672510439014, -0.07797776764321833, 0.03181973380051962, 0.36625139083924985, 0.060172130501247686, -0.0037877068556120726, -0.28362985392337886, 0.15035748713058095, -0.34088036783813014, -0.029435921529534236, -0.06942177286749807, 0.007941456301891678, -0.022121054731056997, -0.05462545241156072, 0.048132703811296536, 0.14587164953435816, -0.2103135179507635, -0.228819846270945, -0.125273387526828], "acf_st": [1.0, 0.447465495971307, -0.1898772142945445, -0.42364058161919604, -0.2596522716700567, -0.019857787543322906, -0.03890222762461558, -0.03329169284295565, -0.25768678371550013, -0.3719545869838352, -0.153813957077329, 0.3963232431036197, 0.8538098163693622, 0.39279387856469267, -0.1548171586555472, -0.36793087653519074, -0.22934938116901513, -0.02899784824409775, -0.04526275723049709, -0.04289275907839467, -0.22790068513662387, -0.3283363745674089, -0.1420717170428419, 0.3663763254136895, 0.7810525356911389, 0.36571134693726454, -0.1513494093929753, -0.3465705652935154, -0.22258245350851955, -0.039051174997417296, -0.04825515243883435], "pacf_st": [1.0, 0.45037111607501684, -0.4957480400201972, -0.1316426592253792, -0.03846176700195623, -0.07769179542618604, -0.28547607570542405, 0.05282156328648232, -0.6227946154288162, -0.43792220295073264, -0.5326479315033225, 0.05609928179675894, 0.6355182132512558, -0.29257993495064155, 0.3297750265600763, 0.12665492643304374, -0.08698334097941926, 0.012528829714527928, 0.02076759824049438, -0.12307893410325534, 0.07212708026366488, -0.3463562955233581, -0.1134430791023121, 0.28403158365445486, 0.17241729272052597, -0.05807110777120406, 0.1461869521302972, 0.026552820112474243, -0.3256636057040469, -0.10277852441242087, -0.3082528633932625], "grid": [[[2, 1, 1], [0, 1, 1, 12], 5, 1648.7643905119075, 1663.578613663207, true], [[2, 1, 2], [0, 1, 1, 12], 6, 1650.6510296480792, 1668.4280974296387, true], [[2, 1, 1], [1, 1, 1, 12], 6, 1650.7499944905617, 1668.5270622721212, true], [[2, 1, 2], [1, 1, 1, 12], 7, 1652.6441558324664, 1673.3840682442858, true], [[1, 1, 2], [0, 1, 1, 12], 5, 1653.886803388135, 1668.7010265394345, true], [[2, 1, 0], [0, 1, 1, 12], 4, 1655.2555288291485, 1667.106907350188, true], [[1, 1, 2], [1, 1, 1, 12], 6, 1655.8792674707315, 1673.656335252291, true], [[2, 1, 0], [1, 1, 1, 12], 5, 1657.3754674260363, 1672.1896905773358, true], [[0, 1, 1], [0, 1, 1, 12], 3, 1661.75568652211, 1670.6442204128896, true], [[0, 1, 2], [0, 1, 1, 12], 4, 1662.768198349098, 1674.6195768701375, true], [[1, 1, 1], [0, 1, 1, 12], 4, 1663.552841155226, 1675.4042196762655, true], [[0, 1, 1], [1, 1, 1, 12], 4, 1663.684767207285, 1675.5361457283245, true], [[0, 1, 2], [1, 1, 1, 12], 5, 1664.6330974756524, 1679.447320626952, true], [[1, 1, 1], [1, 1, 1, 12], 5, 1665.4976031744663, 1680.3118263257659, false], [[1, 1, 0], [0, 1, 1, 12], 3, 1667.1890071082166, 1676.0775409989963, true], [[1, 1, 0], [1, 1, 1, 12], 4, 1668.9837663298317, 1680.8351448508713, true], [[0, 1, 0], [0, 1, 1, 12], 2, 1675.1531139488252, 1681.078803209345, true], [[0, 1, 0], [1, 1, 1, 12], 3, 1676.3105561093153, 1685.1990900000949, true], [[2, 1, 1], [1, 1, 0, 12], 5, 1691.4227766344932, 1706.2369997857927, true], [[2, 1, 2], [1, 1, 0, 12], 6, 1693.4222028775346, 1711.199270659094, true], [[1, 1, 2], [1, 1, 0, 12], 5, 1694.9275029588084, 1709.741726110108, true], [[2, 1, 0], [1, 1, 0, 12], 4, 1697.894156682939, 1709.7455352039785, true], [[0, 1, 2], [1, 1, 0, 12], 4, 1703.139341149691, 1714.9907196707306, true], [[0, 1, 1], [1, 1, 0, 12], 3, 1703.2778788782232, 1712.1664127690028, true], [[1, 1, 1], [1, 1, 0, 12], 4, 1706.221651049921, 1718.0730295709607, false], [[1, 1, 0], [1, 1, 0, 12], 3, 1706.481495508875, 1715.3700293996546, true], [[0, 1, 0], [1, 1, 0, 12], 2, 1710.593561248113, 1716.519250508633, true], [[2, 1, 1], [0, 1, 0, 12], 4, 1716.5497759906973, 1728.4011545117369, true], [[2, 1, 2], [0, 1, 0, 12], 5, 1717.9941594495936, 1732.808382600893, true], [[1, 1, 2], [0, 1, 0, 12], 4, 1718.6841324882796, 1730.5355110093192, true], [[2, 1, 0], [0, 1, 0, 12], 3, 1724.612335248547, 1733.5008691393266, true], [[0, 1, 2], [0, 1, 0, 12], 3, 1733.2984771281008, 1742.1870110188804, true], [[0, 1, 1], [0, 1, 0, 12], 2, 1733.857151265622, 1739.7828405261419, true], [[1, 1, 1], [0, 1, 0, 12], 3, 1735.3524837906903, 1744.2410176814699, true], [[1, 1, 0], [0, 1, 0, 12], 2, 1741.4625712149518, 1747.3882604754717, true], [[0, 1, 0], [0, 1, 0, 12], 1, 1749.665946249489, 1752.628790879749, true]], "over": [[0, 2, 83.12514917320755, 1539.621714979015, 1545.3721096254174, 7.7279044757129975], [1, 4, 78.36122102481214, 1527.9722150341468, 1539.4730043269515, 7.992796634058953], [2, 6, 73.70678760145253, 1515.5171899865704, 1532.7683739257773, 5.954233761999198], [3, 8, 72.9777006182382, 1517.7111017980594, 1540.7126803836686, 5.6944956427655065], [4, 10, 70.39018771816659, 1511.8729305804031, 1540.6249038124147, 5.75784228546385], [6, 14, 69.5763622096443, 1517.1802495801644, 1557.4330121049804, 6.202023698622075]], "best_fc": [3688.710749532525, 3840.7132742124368, 4169.688064954414, 4556.554528136083, 4812.682864012889, 4509.931005288835, 4073.8130176159852, 3917.9986444062315, 3979.4752994612477, 4179.726272409838, 3816.394807094269, 3665.90686784979], "first14": [2096.0, 102.92870040473326, 410.0081068733948, 488.6123485721373, 319.2781151782324, -265.36803821852664, -517.1036437485791, -195.52206368656152, 130.9316208814039, 206.59058700509286, -463.7536740140645, -254.74591455851032, -969.2986253261297, 121.25956132293823], "jb_all": 0.0, "jb_13": 0.19971426160678502, "chk": {"SARIMA(2,1,1)(0,1,1,12)": {"mean": 4.966686387806009, "std": 73.2477312249524, "t": 0.4188086855533388, "lb12": 0.5890718826830628, "lb24": 0.3632999956343924, "jb": 0.19971426160678502}, "ARIMA(3,1,3)": {"mean": 35.06806910443957, "std": 204.90862022769983, "t": 0.03470387369775884, "lb12": 4.376654603623758e-24, "lb24": 4.7881755204570105e-42, "jb": 0.0007116477752885396}, "Model A": {"mean": 2.718198412224897, "std": 79.34078606518608, "t": 0.6826525903856274, "lb12": 0.01211053420258461, "lb24": 0.05133645047114722, "jb": 0.2676279924928285, "mape": 2.2961413914552713}, "Model B": {"mean": 2.753423566508105, "std": 77.80397886801428, "t": 0.6727941525754728, "lb12": 0.05678655286032499, "lb24": 0.07240678870217995, "jb": 0.25851186048433544, "mape": 2.3522424675009286}}, "strict": [0.24415480364275, 0.17245947442822274], "res_acf": [1.0, -0.0048769005575641615, -0.005539595875633468, -0.04886811477467858, 0.030849240150373103, 0.035695549327510144, -0.1541603663284649, 0.10408373617156338, -0.11405656293196186, 0.015052821271184109, 0.06663742775902269, -0.089331402784368, -0.04925860191839639, 0.0608663916073674, 0.06792311505760935, -0.01812832987820942, 0.0364819925792701, -0.012367534295192857, 0.13302295114117305, -0.10545743394033076, -0.04761358542987346, 0.026373675848754358, -0.0372070269733901, 0.1005617605294287, -0.19442974646557598], "ns_acf": [1.0, -0.015821852947148857, -0.060014399880544265, -0.019542499858229208, -0.11862463347063693, 0.03769708661407547, -0.35336713336873826, 0.031826031059160806, -0.172948732307984, -0.011300980882980016, -0.054563148680817346, -0.013606505828958334, 0.8092270142995774, 0.0007942421943813376, -0.05204664873434622, -0.04541755713002116, -0.10395687736608974, 0.012556595345573658, -0.31162172128185167, -0.009184332090923295, -0.15077315375110956, 0.002625736430740342, -0.08047763640028184, -0.002530039645166801, 0.7218773951265414, 0.014606837195885139, -0.07817127134312934, -0.04766698205023597, -0.10305975189409608, 0.0013258394044257348, -0.30325660945318467], "res_std": [121.25956132293823, -19.94558636321426, 9.180752445174676, -73.54736477753977, -23.855984087005254, 85.59778349022918, -3.921422325180174, -43.295992737094366, -37.324847029301964, 64.82470168871805, 37.85275538258156, -23.958138199366203, 49.31368885928305, -44.42208804660095, -32.15794586456741, 39.87000078288929, -4.964222941260232, 32.73129139222692, 13.99554480407187, -83.46215463902126, 37.93475208935706, -69.07727147860714, -53.1927527420421, -9.236767918660917, -87.96751454220475, 35.376712976291856, -115.11641365545847, -47.394005676842426, 61.35797089231255, -74.28467226233533, 68.119769796122, -108.25709808831334, 14.435583668034269, 10.647418999844831, 39.733500424080376, 140.78592381773478, -134.67976302858187, 51.12473425328653, 28.59840527007873, -47.28405912986909, -152.29127009365675, 16.35403572605628, -43.50742120103041, 1.3381911791825587, -0.032941398150796886, 181.37155029390215, 12.540300375264906, -28.489470447428175, 81.61785606782269, 24.109293160099696, 106.36956103502325, 63.31913592128603, 9.724572792095842, 116.50690060854322, -71.9815582392689, -21.067935589695026, -27.754437590509042, 19.366465437557054, -58.02934296340527, 97.867508434093, -6.614937905160787, -130.03159604767097, -78.37754527260222, 36.79365860291, 31.172275681403335, 92.96806933881089, 210.10630813927764, 6.5580554195876175, -33.765248000530846, -74.25651560017468, 135.19412917899626, -22.084713298037514, -9.138649399940277, -40.47254910549373, -11.97374922846484, 73.67233676886917, -26.99398231477244, -63.21179909543298, -81.10768525315234, -109.143115724793, 6.955851100653035, 32.93986056717267, 146.0779828671739, 7.112325466922812, 94.04936961930161, -14.595740254189423, -65.59684415553238, -53.43256431389227, -53.923457036154105, 123.89753124362142, -98.67514891385508, 68.9665750500867, -44.49772499913615, 122.64918979350387, 43.33711301006588, 19.67006066018712, 21.266558614887344, -15.391332614885869, 58.66279212990821, -37.56580013176335, -98.57384200565912, -133.33722206009588, 38.94102938740207, 107.52581168138522, 2.813650875465555, -0.9616991898569722, 40.64817373845017, 141.57757173729715, 25.82856760113509, -2.584614017138847, 107.3580956610881, 39.151721368273684, 123.02867156632237, -21.64411728446248, -67.58543639530671, -75.39207981403024, 185.12282980546524, 132.55460192084092, -40.05873792165494, -7.117495939548007, 150.96803752012192, -53.7996254767495, -55.999449415002346, 68.14065870091872, -43.57546773716422, -33.60994406437885, 4.370229127693619, 26.318403100668093, 107.6060681274339, -3.3814948031595122, 60.504720099304905, -128.20813509614618, 26.771930546456133, -19.28764942457019, -92.93325365719011, -75.9057685560274, -34.47965357607245, 25.64191539042986, -110.85596155640178, -3.422207792980771, -45.30148407679053, -22.71154412937267, 72.16522457219116], "ndiffs": [1, 0], "auto": [[0, 1, 1], [1, 0, 2, 12], 1831.2950625453395, 2.1621916473838096], "auto_fc": [3693.4330075814805, 3852.1343765394563, 4197.614108486708, 4601.060810909334, 4865.949114438176, 4564.6783488391075, 4123.938573824674, 3968.0318648837674, 4027.904517313047, 4230.669285414329, 3875.0672635544174, 3725.1959426703665], "folds": [["2011-01-01", "2018-12-01", 96, "2019-01-01", "2019-12-01"], ["2011-01-01", "2019-12-01", 108, "2020-01-01", "2020-12-01"], ["2011-01-01", "2020-12-01", 120, "2021-01-01", "2021-12-01"], ["2011-01-01", "2021-12-01", 132, "2022-01-01", "2022-12-01"], ["2011-01-01", "2022-12-01", 144, "2023-01-01", "2023-12-01"]], "cv": {"seasonal naive": {"2019": 5.714415972800383, "2020": 3.8556963340398673, "2021": 9.686609099749877, "2022": 6.650489892923532, "2023": 2.2357668752371125}, "Holt-Winters": {"2019": 2.90375673070145, "2020": 2.8927791436318, "2021": 5.416854005560849, "2022": 2.233358174142811, "2023": 7.703049049709958}, "SARIMA(211)(011)": {"2019": 1.953208801171528, "2020": 2.4422817232598306, "2021": 7.33184590173243, "2022": 2.33999735951412, "2023": 5.964897866827796}, "SARIMA(313)(111)": {"2019": 1.8030711919761517, "2020": 2.1860019652113047, "2021": 6.494435313749318, "2022": 2.8072263104415938, "2023": 5.518580136437787}, "auto_arima": {"2019": 4.124718707443496, "2020": 2.6807757140045965, "2021": 8.139101494558917, "2022": 1.5895955095943073, "2023": 4.445676707469279}}, "step6_Holt-Winters": [9, 4.341309383916663], "step6_SARIMA(211)(011)": [9, 3.8054894579934913], "grid2018": [[2, 1, 1], [0, 1, 1, 12]], "fin": {"mean": [3688.710749532525, 3840.7132742124368, 4169.688064954414, 4556.554528136083, 4812.682864012889, 4509.931005288835, 4073.8130176159852, 3917.9986444062315, 3979.4752994612477, 4179.726272409838, 3816.394807094269, 3665.90686784979], "lo": [3551.2381093410686, 3622.4304354941787, 3911.2999013521735, 4281.363725878162, 4529.201998007311, 4219.5924524256, 3775.22872388794, 3609.2573913971646, 3659.585103680777, 3848.8238717160166, 3475.179829361562, 3315.0964520888338], "hi": [3826.1833897239812, 4058.996112930695, 4428.076228556653, 4831.745330394004, 5096.163730018467, 4800.26955815207, 4372.397311344031, 4226.739897415298, 4299.365495241718, 4510.62867310366, 4157.609784826976, 4016.7172836107466], "hw": [3655.5117006023684, 3809.9178380357307, 4166.967179988462, 4578.514787432151, 4843.145512624174, 4540.1179292251845, 4098.380669199957, 3942.741857664147, 4002.4753730740995, 4195.781809409446, 3825.331071864377, 3667.9514377573696], "hwm": 2.7494956510732695, "sm": 2.9334080438411703, "inside": 11}, "F": {"AR(1)": [3516.7971708693312, 3502.888363072793, 3496.688446600125, 3493.924804681253, 3492.69289830164, 3492.143770240668, 3491.8989938255627, 3491.789883587623, 3491.7412471860403, 3491.7195672813523, 3491.709903361902, 3491.7055956243685], "AR(2)": [3684.0466807719495, 3808.8228909818567, 3824.9842102613297, 3774.4875925845085, 3732.994063624422, 3730.19886482842, 3748.7053817075725, 3762.377300852521, 3762.381463043468, 3755.674288504434, 3751.2144209418498, 3751.5420005905903], "AR(3)": [3630.9371566054706, 3759.0305965242014, 3811.9277494573726, 3781.043412721152, 3724.0270511403023, 3695.1166428048923, 3704.8375512285475, 3729.9559348319185, 3745.0078538589196, 3742.637037895594, 3731.78765879853, 3724.206786315156], "MA(1)": [3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436, 3705.1372307487436], "MA(2)": [3706.472808882339, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294, 3704.5258600524294], "MA(3)": [3715.3723792000146, 3990.2650796530115, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627, 3902.8925030889627], "ARMA(3,3)": [3662.3105499295552, 3907.4574625556793, 4004.646631477813, 3981.48557483372, 3925.1247109905476, 3891.00190030592, 3887.1384460436, 3897.7060681473267, 3907.3594231652046, 3910.5854039843734, 3909.234937261823, 3906.917421250941], "ARIMA(0, 1, 1)": [3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551, 3704.716660761551], "ARIMA(3, 1, 3)": [3660.6383773410007, 3905.0015995239187, 4001.0020256760313, 3978.403217083551, 3923.9420016084614, 3891.2912734256793, 3887.5958651959495, 3897.457855182251, 3906.392901614929, 3909.360953037491, 3908.1504425399326, 3906.077781577452], "ARIMA(3, 2, 3)": [3779.4674969869347, 3963.037444750632, 4095.488427360201, 4076.8276706066613, 3983.6152644007148, 3849.0596710246277, 3739.9175966926164, 3669.0882223892004, 3639.2351494865684, 3627.7578547689977, 3617.027467401038, 3593.171774131592], "SARIMA(3,1,3)(1,1,1,12)": [3673.6642023412633, 3845.632599942485, 4169.201921996491, 4572.136595450836, 4852.321731291736, 4528.817678919723, 4092.4498589268796, 3939.5634605667274, 3991.6007596876284, 4192.284960178143, 3842.2473833539143, 3692.923201235307], "SARIMA(2,1,1)(0,1,1,12)": [3688.710749532525, 3840.7132742124368, 4169.688064954414, 4556.554528136083, 4812.682864012889, 4509.931005288835, 4073.8130176159852, 3917.9986444062315, 3979.4752994612477, 4179.726272409838, 3816.394807094269, 3665.90686784979]}, "demo": {"ar": [[1.0, 0.702726869802755, 0.5891922821417204, 0.4477953037215556, 0.34033704298338263, 0.26915486681484246, 0.19267783165204486, 0.15785882819323552, 0.07539448228235573, 0.008747668104998026, -0.03605879077486705, -0.07336431587038755, -0.08037889591842237, -0.08919030799892211, -0.1263912760378712, -0.15299576305938947], [1.0, 0.7041351400829209, 0.18991157535739298, -0.04250337773451853, -0.029439180240436902, 0.02128432456059102, -0.03018243792481401, 0.025488019531702828, -0.09326198650832611, -0.0735296677365359, -0.01464115689274555, -0.017994108739039106, 0.01232295637796659, -0.0036496614944621746, -0.08998393407583975, -0.05065481090392078]], "ma": [[1.0, 0.6300284763482028, 0.2477663033538253, -0.06559614863249166, -0.10543274918665395, -0.061655939515728814, -0.020490367487647695, 0.022262734951552173, -0.022468139861379202, -0.08689532624573301, -0.1219124693511764, -0.10141796292610794, -0.04648203702732104, -0.024437380536923355, -0.051906977766272656, -0.08698798354988076], [1.0, 0.6312910584651331, -0.24900103657964415, -0.1860119409133093, 0.1571230856214624, -0.018625914657379453, -0.06263481194902867, 0.07986930620755145, -0.11380788326771593, -0.07904955097992657, 0.023178905911245634, -0.0245359969686628, -0.007053392061433456, -0.02983134078432982, -0.08522510823920561, -0.022914354634705425]]}, "st": [106.0, 408.0, 486.0, 317.0, -268.0, -521.0, -198.0, 133.0, 212.0, -459.0, -256.0, 78.0, 222.0, 422.0, 467.0, 214.0, -328.0, -429.0, -151.0, 96.0, 156.0, -394.0, -179.0, 56.0, 195.0, 368.0, 416.0, 292.0, -278.0, -432.0, -153.0, 23.0, 189.0, -472.0, -268.0, 58.0, 115.0, 439.0, 380.0, 218.0, -215.0, -481.0, -101.0, -1.0, 169.0, -417.0, -173.0, 218.0, 47.0, 381.0, 453.0, 221.0, -434.0, -477.0, -143.0, 105.0, 218.0, -239.0, -168.0, 24.0, 145.0, 412.0, 533.0, 324.0, -314.0, -398.0, -233.0, -10.0, 139.0, -365.0, -231.0, 189.0, 169.0, 263.0, 322.0, 294.0, -214.0, -310.0, 75.0, 74.0, 52.0, -566.0, -134.0, 139.0, 147.0, 336.0, 406.0, 345.0, -287.0, -505.0, -233.0, -61.0, 179.0, -317.0, 7.0, 162.0, 190.0, 315.0, 298.0, 176.0, -346.0, -285.0, -155.0, 96.0, 127.0, -306.0, -107.0, 121.0, 134.0, 320.0, 445.0, 239.0, -411.0, -578.0, -107.0, 233.0, 241.0, -397.0, -165.0, 230.0, 182.0, 322.0, 474.0, 298.0, -210.0, -468.0, -262.0, -59.0, 339.0, -169.0, -165.0, 50.0, 234.0, 310.0, 325.0, 303.0, -314.0, -476.0, -149.0, 98.0, 315.0, -343.0, -137.0, -35.0, 121.0, 345.0, 345.0, 200.0, -320.0, -383.0, -213.0, 50.0, 177.0, -372.0, -70.0], "ma3": [0.407, -0.251, -0.869]};
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const nf=(n,d)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const C={o:"#B8530F",a:"#C98A1E",b:"#5B4330",r:"#8A3410",g:"#9A8B72",ink:"#33291E"};
+
+/* progress + nav */
+const prog=$("#prog"),links=$$(".topbar a"),secs=links.map(a=>$(a.getAttribute("href")));
+function onScroll(){const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";let cur=-1;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<120)cur=i});links.forEach((a,i)=>a.classList.toggle("active",i===cur))}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+/* date helpers */
+const mLabel=(y0,m0,i)=>new Date(Date.UTC(y0,m0+i,1)).toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
+const dLabel=(i,base=Date.UTC(2016,0,1))=>new Date(base+i*864e5).toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const monthLabels=(y0,m0,n)=>Array.from({length:n},(_,i)=>mLabel(y0,m0,i));
+const yearTicks=(y0,m0,n)=>{const t=[];for(let i=0;i<n;i++){const d=new Date(Date.UTC(y0,m0+i,1));if(d.getUTCMonth()===0)t.push({i,label:String(d.getUTCFullYear())})}return t};
+
+/* nice ticks */
+function niceTicks(lo,hi,k){const raw=(hi-lo)/k,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,s=(f<1.5?1:f<3?2:f<7?5:10)*p;const t=[];for(let v=Math.ceil(lo/s)*s;v<=hi+1e-9;v+=s)t.push(+v.toFixed(10));return t}
+const tickFmt=(v,step)=>Math.abs(v)>=1000?fmt(v):(Math.abs(v)<10?nf(v,v%1?2:0):nf(v,Math.abs(v)<100&&v%1?1:0));
+
+function legend(root,series){root.innerHTML='<div class="lg">'+series.map(s=>`<span><svg width="30" height="10" aria-hidden="true"><line x1="0" y1="5" x2="30" y2="5" stroke="${s.color}" stroke-width="${s.w||2.5}" stroke-dasharray="${s.dash||""}" opacity="${s.op||1}"/></svg>${s.name}</span>`).join("")+"</div>"}
+
+/* line chart */
+function lineChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=12,pb=o.noX?8:26,N=o.labels.length;
+  let lo=Infinity,hi=-Infinity;o.series.forEach(s=>s.y.forEach(v=>{if(v!=null&&isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  (o.bands||[]).forEach(b=>b.lo.concat(b.hi).forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.06||1;if(o.ymin==null)lo-=pad;if(o.ymax==null)hi+=pad;
+  const x=i=>pl+i*(W-pl-pr)/(N-1),y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb);
+  root.innerHTML='<div class="chw"><div class="tip"></div></div>';const wrap=$(".chw",root),tip=$(".tip",wrap);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Line chart",tabindex:0});wrap.insertBefore(svg,tip);
+  niceTicks(lo,hi,o.yt||4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9","stroke-width":1},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  (o.bands||[]).forEach(b=>{let d="";const idx=b.lo.map((_,i)=>i).filter(i=>b.lo[i]!=null);idx.forEach((i,k)=>{d+=(k?"L":"M")+x(i)+" "+y(b.hi[i])});idx.slice().reverse().forEach(i=>{d+="L"+x(i)+" "+y(b.lo[i])});el("path",{d:d+"Z",fill:b.color||"#D9792B","fill-opacity":.25,stroke:"none"},svg)});
+  if(o.zero&&lo<0&&hi>0)el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  (o.xt||[]).forEach(t=>{el("line",{x1:x(t.i),x2:x(t.i),y1:H-pb,y2:H-pb+4,stroke:"#66573F"},svg);const e=el("text",{x:x(t.i),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);e.textContent=t.label});
+  (o.vlines||[]).forEach(v=>{el("line",{x1:x(v.i),x2:x(v.i),y1:pt,y2:H-pb,stroke:v.color||C.r,"stroke-width":2,"stroke-dasharray":v.dash||"6 4"},svg);if(v.label){const t=el("text",{x:x(v.i)+4,y:pt+11,"font-size":11.5,"font-weight":700,fill:v.color||C.r},svg);t.textContent=v.label}});
+  o.series.forEach(s=>{let d="",pen=false;s.y.forEach((v,i)=>{if(v==null||!isFinite(v)){pen=false;return}d+=(pen?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1);pen=true});
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":s.w||2.5,"stroke-dasharray":s.dash||"",opacity:s.op||1,"stroke-linejoin":"round"},svg)});
+  (o.marks||[]).forEach(m=>{el("circle",{cx:x(m.i),cy:y(m.v),r:6,fill:m.color||C.r,stroke:"#FFFBF1","stroke-width":2},svg);if(m.label){const t=el("text",{x:x(m.i)+(m.dx||9),y:y(m.v)+(m.dy||4),"font-size":11.5,"font-weight":700,fill:m.color||C.r,"text-anchor":m.anchor||"start"},svg);t.textContent=m.label}});
+  const g=el("g",{style:"display:none"},svg),gl=el("line",{y1:pt,y2:H-pb,stroke:"#33291E","stroke-width":1,"stroke-dasharray":"3 3"},g),dots=o.series.map(s=>el("circle",{r:4,fill:s.color,stroke:"#FFFBF1","stroke-width":1.5},g));
+  let cur=Math.floor(N/2);
+  function show(i){cur=i;g.style.display="";const px=x(i);gl.setAttribute("x1",px);gl.setAttribute("x2",px);
+    let h=`<b>${o.labels[i]}</b>`;o.series.forEach((s,k)=>{const v=s.y[i];if(v==null||!isFinite(v)){dots[k].style.display="none";return}dots[k].style.display="";dots[k].setAttribute("cx",px);dots[k].setAttribute("cy",y(v));h+=`<br>${s.name}: ${(o.vFmt||fmt)(v)}`});
+    tip.innerHTML=h;tip.style.display="block";const pct=px/W*100;tip.style.left=pct>60?"auto":`calc(${pct}% + 10px)`;tip.style.right=pct>60?`calc(${100-pct}% + 10px)`:"auto";tip.style.top="0";
+    o.onHover&&o.onHover(i)}
+  svg.addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W;show(Math.max(0,Math.min(N-1,Math.round((px-pl)/(W-pl-pr)*(N-1)))))});
+  svg.addEventListener("pointerleave",()=>{g.style.display="none";tip.style.display="none"});
+  svg.addEventListener("keydown",e=>{if(e.key==="ArrowRight"){show(Math.min(N-1,cur+1));e.preventDefault()}if(e.key==="ArrowLeft"){show(Math.max(0,cur-1));e.preventDefault()}});
+  svg.addEventListener("blur",()=>{g.style.display="none";tip.style.display="none"});
+}
+/* bar chart (grouped) */
+let barId=0;
+function barChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=22,pb=28,N=o.labels.length,ns=o.series.length,id="h"+(barId++);
+  let lo=Math.min(0,...o.series.flatMap(s=>s.v)),hi=Math.max(0,...o.series.flatMap(s=>s.v));if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;if(o.hline)hi=Math.max(hi,o.hline.v);const pad=(hi-lo)*.08;hi+=pad;if(lo<0)lo-=pad;
+  const y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb),gw=(W-pl-pr)/N,bw=gw*.78/ns;
+  root.innerHTML="";const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Bar chart"});root.appendChild(svg);
+  const defs=el("defs",{},svg),pat=el("pattern",{id,width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"},defs);el("rect",{width:6,height:6,fill:"#F5DDBD"},pat);el("rect",{width:3,height:6,fill:C.b},pat);
+  niceTicks(lo,hi,4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9"},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  if(o.hline){el("line",{x1:pl,x2:W-pr,y1:y(o.hline.v),y2:y(o.hline.v),stroke:"#8A3410","stroke-width":2.5,"stroke-dasharray":"6 4"},svg);const ht=el("text",{x:W-pr-4,y:y(o.hline.v)-5,"text-anchor":"end","font-size":12,"font-weight":700,fill:"#8A3410"},svg);ht.textContent=o.hline.label||""}
+  o.labels.forEach((l,i)=>{const t=el("text",{x:pl+gw*(i+.5),y:H-9,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);t.textContent=l;
+    o.series.forEach((s,k)=>{const v=s.v[i];if(v==null)return;const bx=pl+gw*i+gw*.11+bw*k,y0=y(0),y1=y(v);
+      const r=el("rect",{x:bx,y:Math.min(y0,y1),width:bw,height:Math.max(1,Math.abs(y1-y0)),fill:s.hatch?`url(#${id})`:s.color,stroke:s.hatch?C.b:"none"},svg);el("title",{},r).textContent=`${l}: ${(o.vFmt||fmt)(v)}`;
+      if(o.labelsOn!==false&&ns<=2){const t2=el("text",{x:bx+bw/2,y:(v>=0?y1-4:y1+12),"text-anchor":"middle","font-size":ns>1?9.5:11,fill:C.ink},svg);t2.textContent=(o.vFmt||fmt)(v)}})});
+}
+
+const Y=D.y,N=Y.length,TR=Y.slice(0,156),TE=Y.slice(156),LAB=monthLabels(2011,0,N),FROM=120;
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const sum=a=>a.reduce((x,y)=>x+y,0),avg=a=>sum(a)/a.length;
+const mape=(a,p)=>avg(a.map((v,i)=>Math.abs(v-p[i])/v))*100;
+const L48=LAB.slice(FROM),xt48=(()=>{const t=[];for(let i=0;i<48;i+=12)t.push({i,label:String(2011+(FROM+i)/12)});return t})();
+const hist=()=>({name:"Training data",y:Y.map((v,i)=>i>=FROM&&i<156?v:null).slice(FROM),color:C.g,w:2.4,op:.9});
+const act={name:"Actual 2024",y:Y.map((v,i)=>i>=155?v:null).slice(FROM),color:C.ink,w:3.5};
+const padF=f=>Array(36).fill(null).concat(f);
+const F=D.F;
+function stem(root,o){
+  const v=o.vals,W=o.w||720,H=o.h||210,pl=42,pr=12,pt=12,pb=32,K=v.length-1;
+  const x=k=>pl+(k-.5)/K*(W-pl-pr),lo=-1,hi=1,y=t=>pt+(1-(t-lo)/(hi-lo))*(H-pt-pb);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Autocorrelation chart"});
+  niceTicks(lo,hi,4).forEach(t=>{el("line",{x1:pl,x2:W-pr,y1:y(t),y2:y(t),stroke:"#E3D7BC"},svg);const tx=el("text",{x:pl-6,y:y(t)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);tx.textContent=nf(t,1)});
+  if(o.band!=null)el("rect",{x:pl,y:y(o.band),width:W-pl-pr,height:y(-o.band)-y(o.band),fill:"#D9792B","fill-opacity":.16},svg);
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  for(let k=1;k<=K;k++)if(k===1||k%(o.every||6)===0){const tx=el("text",{x:x(k),y:H-14,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=k}
+  const xl=el("text",{x:(pl+W-pr)/2,y:H-1,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);xl.textContent="lag";
+  for(let k=1;k<=K;k++){const val=v[k],out=o.band!=null&&Math.abs(val)>o.band,hl=o.hl&&o.hl.includes(k);
+    const g=el("g",{},svg);el("title",{},g).textContent=`lag ${k}: ${nf(val,3)}${out?" (outside the band)":""}`;
+    el("line",{x1:x(k),x2:x(k),y1:y(0),y2:y(val),stroke:out?C.o:C.g,"stroke-width":out?3:2},g);
+    el("circle",{cx:x(k),cy:y(val),r:out?4.2:3,fill:out?C.o:"#FFFBF1",stroke:out?C.o:C.g,"stroke-width":1.6},g);
+    if(hl){const t=el("text",{x:x(k),y:val>=0?y(val)-8:y(val)+16,"text-anchor":"middle","font-size":11,"font-weight":700,fill:C.r},g);t.textContent=nf(val,2)}}
+  root.replaceChildren(svg);
+}
+const fc=(name,color,dash)=>({name,y:padF(F[name]),color:color||C.o,w:3,dash});
+
+/* 1 cold open */
+(function(){
+  lineChart($("#o_chart"),{labels:LAB,xt:yearTicks(2011,0,N).filter((_,i)=>i%2===0),series:[{name:"Units",y:Y,color:C.o,w:2.2}],h:220,aria:"VoltNest batteries sold per month"});
+  const R={2021:[5.42,7.33],2023:[7.70,5.96]};let yr=2021;
+  function draw(){const r=R[yr];
+    barChart($("#c_bars"),{labels:["Holt-Winters","SARIMA(2,1,1)(0,1,1,12)"],series:[{name:"MAPE",v:r,color:C.o}],h:190,ymin:0,vFmt:v=>nf(v,2)+"%",yFmt:v=>nf(v,0),hline:{v:5,label:"5% target"},aria:"MAPE on "+yr});
+    const m={2021:["5.42%","7.33%","203.3","275.5","233.9","300.2"],2023:["7.70%","5.96%","305.4","235.4","315.5","246.6"]}[yr];
+    $("#c_tab").innerHTML=`<tr><th>Test year ${yr}</th><th class="num">MAE</th><th class="num">RMSE</th><th class="num">MAPE</th></tr><tr><td>Holt-Winters</td><td class="num">${m[2]}</td><td class="num">${m[4]}</td><td class="num">${m[0]}</td></tr><tr><td>SARIMA</td><td class="num">${m[3]}</td><td class="num">${m[5]}</td><td class="num">${m[1]}</td></tr>`;
+    $("#c_msg").textContent=yr===2021?"On 2021, Holt-Winters wins: Analyst 1's slide is true.":"On 2023, SARIMA wins: Analyst 2's slide is true.";
+    $$("#c_btns button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.y===yr))}
+  $$("#c_btns button").forEach(b=>b.onclick=()=>{yr=+b.dataset.y;draw()});draw();
+})();
+
+/* 2 AR */
+(function(){
+  const st=D.st;lineChart($("#a_chg"),{labels:LAB.slice(1,156),xt:yearTicks(2011,1,155).filter((_,i)=>i%2===0),series:[{name:"Monthly change",y:st,color:C.o,w:2}],zero:true,h:190,aria:"Monthly changes of the training series"});
+  $("#a_lag").innerHTML="<tr><th>Month</th><th class='num'>y(t−1)</th><th class='num'>y(t−2)</th><th class='num'>y(t−3)</th><th class='num'>target y(t)</th></tr>"+D.lagtab.map(r=>`<tr><td>${r[0].slice(0,7)}</td><td class="num">${nf(r[1],0)}</td><td class="num">${nf(r[2],0)}</td><td class="num">${nf(r[3],0)}</td><td class="num"><b>${nf(r[4],0)}</b></td></tr>`).join("");
+  stem($("#a_pacf"),{vals:D.pacf_st.slice(0,16),band:1.96/Math.sqrt(155),hl:[1,2,3],every:3,aria:"PACF of the monthly changes"});
+  const sl=$("#w_a");
+  function w(){const a=+sl.value;$("#w_ao").textContent=nf(a,2);const sw=Array.from({length:6},(_,k)=>a*(1-a)**k);
+    barChart($("#w_chart"),{labels:[1,2,3,4,5,6].map(k=>"lag "+k),series:[{name:"SES weight",v:sw,color:C.o},{name:"AR(6), learnt",v:D.arw,color:C.b,hatch:true}],h:230,vFmt:v=>nf(v,2),yFmt:v=>nf(v,1),aria:"Weights on past values, SES versus AR(6)"});
+    $("#w_lg").innerHTML='<div class="lg"><span><i class="sw" style="background:#B8530F"></i>SES weight</span><span><i class="sw" style="background:repeating-linear-gradient(45deg,#F5DDBD 0 3px,#5B4330 3px 6px)"></i>AR(6), learnt from data</span></div>'}
+  sl.addEventListener("input",w);w();
+})();
+
+/* 3 AR code */
+(function(){
+  let k="AR(1)";const M={"AR(1)":[16.78,"One lag: the forecast changes shrink to zero, so the forecast is almost a flat line."],"AR(2)":[10.56,"Two lags: coefficients 0.665 and −0.491, close to our own regression (0.654 and −0.489)."],"AR(3)":[11.19,"Three lags: slightly worse. The third coefficient is only −0.136, in line with the small PACF bar at lag 3."]};
+  function draw(){
+    const cf=k==="AR(1)"?D.ar1_changes:F[k].map((v,i)=>v-(i?F[k][i-1]:TR[155]));
+    barChart($("#r_chg"),{labels:MN,series:[{name:"change",v:cf,color:C.b}],h:170,vFmt:v=>nf(v,1),yFmt:v=>fmt(v),aria:"Forecast monthly changes"});
+    const ser=[hist(),act,fc(k)];lineChart($("#r_chart"),{labels:L48,xt:xt48,series:ser,h:230,aria:"Integrated "+k+" forecast"});legend($("#r_lg"),ser);
+    $("#r_kpi").innerHTML=`<div><b>MAPE 2024</b><span>${nf(mape(TE,F[k]),2)}%</span></div><div><b>Target</b><span>≤ 5%</span></div>`;$("#r_msg").textContent=M[k][1];
+    $$("#r_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k))}
+  $$("#r_btns button").forEach(b=>b.onclick=()=>{k=b.dataset.k;draw()});draw();
+  stem($("#x_acf"),{vals:D.acf_st,band:1.96/Math.sqrt(155),hl:[12],every:6,w:520,aria:"ACF of the monthly changes"});stem($("#x_pacf"),{vals:D.pacf_st,band:1.96/Math.sqrt(155),hl:[1,2],every:6,w:520,aria:"PACF of the monthly changes"});
+})();
+
+/* 4 MA */
+(function(){
+  let k="ar";const msg={ar:"Simulated AR(2): the PACF has two large bars and then drops to the band; the ACF fades gradually.",ma:"Simulated MA(2): the ACF has two large bars and then drops to the band; the PACF fades or swings more slowly."};
+  function d(){const s=D.demo[k],b=1.96/Math.sqrt(500);stem($("#m_acf"),{vals:s[0],band:b,every:3,w:520,aria:"ACF of simulated "+k});stem($("#m_pacf"),{vals:s[1],band:b,every:3,w:520,aria:"PACF of simulated "+k});$("#m_msg").textContent=msg[k]+" Band ±0.088.";$$("#m_btns button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===k))}
+  $$("#m_btns button").forEach(x=>x.onclick=()=>{k=x.dataset.k;d()});d();
+  let q="MA(3)";const M={"MA(1)":"MA(1): 11.79%. One past surprise.","MA(2)":"MA(2): 11.80%. The second coefficient is almost zero (−0.009), so the line lies on top of MA(1).","MA(3)":"MA(3): 7.35%, with a large third coefficient (−0.869)."};
+  function dq(){const ser=[hist(),act,fc(q)];lineChart($("#q_chart"),{labels:L48,xt:xt48,series:ser,h:230,aria:q+" forecast"});legend($("#q_lg"),ser);$("#q_kpi").innerHTML=`<div><b>MAPE 2024</b><span>${nf(mape(TE,F[q]),2)}%</span></div>`;$("#q_msg").textContent=M[q];$$("#q_btns button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===q))}
+  $$("#q_btns button").forEach(x=>x.onclick=()=>{q=x.dataset.k;dq()});dq();
+})();
+
+/* 5 ARMA / ARIMA */
+(function(){
+  const W=D.wrong,lab=monthLabels(2019,0,108),n=60;
+  const hs=Array.from({length:108},(_,i)=>i<60?Y[96+i]:null);
+  const lab2=monthLabels(2019,0,120);
+  const s=[{name:"Actual",y:Array.from({length:120},(_,i)=>96+i<168?Y[96+i]:null),color:C.ink,w:2.6},{name:"ARMA(2,2) on raw units",y:Array.from({length:120},(_,i)=>i>=60?W[i-60]:null),color:C.o,w:3}];
+  lineChart($("#w2_chart"),{labels:lab2,xt:yearTicks(2019,0,120).filter((_,i)=>i%2===0),series:s,h:230,aria:"ARMA on a non-stationary series"});legend($("#w2_lg"),s);
+  let k="ARIMA(3, 1, 3)";const M={"ARIMA(0, 1, 1)":"MA(1) with the differencing inside: 11.80%. The earlier MA(1) with a manual cumulative sum gave 11.79%.","ARIMA(3, 1, 3)":"7.28%. Compare with ARMA(3,3) on the changes, 7.25%: practically the same model and the same answer. Our manual logic matches the library.","ARIMA(3, 2, 3)":"9.81%. A second difference removes more than was needed and does not help, so we stay with d = 1. All of these still miss the summer peak: none has a term that looks one year back."};
+  function d(){const ser=[hist(),act,fc(k)];lineChart($("#i_chart"),{labels:L48,xt:xt48,series:ser,h:230,aria:k+" forecast"});legend($("#i_lg"),ser);$("#i_kpi").innerHTML=`<div><b>MAPE 2024</b><span>${nf(mape(TE,F[k]),2)}%</span></div>`;$("#i_msg").textContent=M[k];$$("#i_btns button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===k))}
+  $$("#i_btns button").forEach(x=>x.onclick=()=>{k=x.dataset.k;d()});d();
+})();
+
+/* 6 SARIMA */
+(function(){
+  barChart($("#s_bars"),{labels:["s = 3","s = 4","s = 6","s = 12"],series:[{name:"MAPE",v:[6.39,6.21,6.21,5.96],color:C.o}],h:200,ymin:0,vFmt:v=>nf(v,2)+"%",yFmt:v=>nf(v,0),aria:"MAPE on 2023 for each season length"});
+  const S=[$("#l_p"),$("#l_P"),$("#l_q"),$("#l_Q")];
+  function l(){const [p,P,q,Q]=S.map(i=>+i.value);["p","P","q","Q"].forEach((n,i)=>$("#l_"+n+"o").textContent=S[i].value);
+    const W=720,H=230,pl=20,pr=24,maxLag=12*Math.max(3,P,Q)+1,xx=lag=>pl+(1-lag/maxLag)*(W-pl-pr);
+    const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Past points used to forecast y100"});
+    const ry=[70,160];[["past values y",ry[0]],["past errors e",ry[1]]].forEach(([t,y])=>{el("line",{x1:pl,x2:W-pr,y1:y,y2:y,stroke:"#D6C7A9"},svg);const tx=el("text",{x:pl,y:y-34,"font-size":11.5,"font-weight":700,fill:"#66573F"},svg);tx.textContent=t});
+    for(let lag=maxLag;lag>=1;lag--){const t=100-lag,cx=xx(lag);
+      [[lag<=p||(lag%12===0&&lag/12<=P),ry[0],C.o,"y"],[lag<=q||(lag%12===0&&lag/12<=Q),ry[1],C.b,"e"]].forEach(([on,y,col,L])=>{
+        const c=el("circle",{cx,cy:y,r:on?7:3,fill:on?col:"#FFFBF1",stroke:on?col:"#D6C7A9","stroke-width":1.5},svg);el("title",{},c).textContent=`${L}${t} (lag ${lag})`;
+        if(on){const tx=el("text",{x:cx,y:y+(lag%2?-14:24),"text-anchor":"middle","font-size":10.5,fill:C.ink},svg);tx.textContent=L+t}})}
+    el("circle",{cx:xx(0),cy:115,r:9,fill:C.r},svg);const ft=el("text",{x:xx(0),y:103,"text-anchor":"middle","font-size":12,"font-weight":700,fill:C.r},svg);ft.textContent="ŷ100";
+    $("#l_chart").replaceChildren(svg);
+    const ls=[];for(let i=1;i<=p;i++)ls.push(`y${100-i}`);for(let i=1;i<=P;i++)ls.push(`y${100-12*i}`);
+    const es=[];for(let i=1;i<=q;i++)es.push(`e${100-i}`);for(let i=1;i<=Q;i++)es.push(`e${100-12*i}`);
+    $("#l_msg").innerHTML=`<b>Past values:</b> ${ls.join(", ")||"none"}. <b>Past errors:</b> ${es.join(", ")||"none"}. (Orange = values, brown = errors, small hollow dots = lags not used.)`}
+  S.forEach(i=>i.addEventListener("input",l));l();
+  let k="SARIMA(3,1,3)(1,1,1,12)";const M={"ARIMA(3, 1, 3)":"7.28%: no term looks one year back, so the summer peak is missed.","SARIMA(3,1,3)(1,1,1,12)":"About 2.6%: the forecast now follows the summer peak."};
+  function z(){const ser=[hist(),act,fc(k)];lineChart($("#z_chart"),{labels:L48,xt:xt48,series:ser,h:230,aria:k+" forecast"});legend($("#z_lg"),ser);$("#z_kpi").innerHTML=`<div><b>MAPE 2024</b><span>${nf(mape(TE,F[k]),2)}%</span></div><div style="flex-basis:60%"><b>Reading</b><span style="font-size:15px;font-weight:600">${M[k]}</span></div>`;$$("#z_btns button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.k===k))}
+  $$("#z_btns button").forEach(x=>x.onclick=()=>{k=x.dataset.k;z()});z();
+})();
+
+/* 7 orders */
+(function(){
+  const b=1.96/Math.sqrt(D.acf_w.length>0?142:142);
+  stem($("#g_acf"),{vals:D.acf_w,band:1.96/Math.sqrt(142),hl:[1,12,24],every:6,w:520,aria:"ACF after diff(1) and diff(12)"});stem($("#g_pacf"),{vals:D.pacf_w,band:1.96/Math.sqrt(142),hl:[1,12,24],every:6,w:520,aria:"PACF after diff(1) and diff(12)"});
+  let all=false;
+  function g(){const rows=all?D.grid:D.grid.slice(0,6);
+    $("#g_tab").innerHTML="<tr><th class='num'>#</th><th>Order</th><th>Seasonal</th><th class='num'>Parameters</th><th class='num'>AIC</th><th class='num'>BIC</th><th>Converged</th></tr>"+rows.map((r,i)=>`<tr${i===0?' class="best"':""}><td class="num">${i+1}</td><td>(${r[0]})</td><td>(${r[1]})</td><td class="num">${r[2]}</td><td class="num">${nf(r[3],1)}</td><td class="num">${nf(r[4],1)}</td><td>${r[5]?"yes":"no"}</td></tr>`).join("");
+    $("#g_all").textContent=all?"Show top 6 only":"Show all 36 rows";$("#g_all").setAttribute("aria-pressed",all)}
+  $("#g_all").onclick=()=>{all=!all;g()};g();
+  let m=5;const names={2:"Train RMSE (units)",3:"AIC",4:"BIC",5:"2023 MAPE (%)"};
+  function o(){barChart($("#o_chart"),{labels:D.over.map(r=>"k = "+r[0]),series:[{name:names[m],v:D.over.map(r=>r[m]),color:C.o}],h:220,ymin:m===5||m===2?0:Math.min(...D.over.map(r=>r[m]))-20,vFmt:v=>m===5?nf(v,2)+"%":nf(v,1),yFmt:v=>m===5?nf(v,0):fmt(v),aria:names[m]+" by k"});
+    $("#o_tab").innerHTML="<tr><th class='num'>p = q</th><th class='num'>Parameters</th><th class='num'>Train RMSE</th><th class='num'>AIC</th><th class='num'>BIC</th><th class='num'>2023 MAPE %</th></tr>"+D.over.map(r=>`<tr><td class="num">${r[0]}</td><td class="num">${r[1]}</td><td class="num">${nf(r[2],1)}</td><td class="num">${nf(r[3],1)}</td><td class="num">${nf(r[4],1)}</td><td class="num">${nf(r[5],2)}</td></tr>`).join("");
+    $$("#o_btns button").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.k===m))}
+  $$("#o_btns button").forEach(x=>x.onclick=()=>{m=+x.dataset.k;o()});o();
+})();
+
+/* 9 residuals */
+(function(){
+  const r=D.first14;const sl=$("#t_k");
+  function t(){const k=+sl.value;$("#t_ko").textContent=k;const RS=D.res_std_all||null;
+    const all=r.slice(k);
+    lineChart($("#t_chart"),{labels:r.map((_,i)=>"month "+(i+1)),xt:r.map((_,i)=>({i,label:String(i+1)})).filter((_,i)=>i%2===0),series:[{name:"residual",y:r.map((v,i)=>i>=k?v:null),color:C.o,w:2.8}],zero:true,h:190,aria:"First 14 residuals"});
+    $("#t_kpi").innerHTML=`<div><b>First 14 residuals</b><span style="font-size:15px">${r.map(v=>fmt(v)).join(", ")}</span></div><div><b>Jarque-Bera p (all residuals)</b><span>${nf(D.jb_all,4)}</span></div><div><b>Jarque-Bera p (drop first 13)</b><span>${nf(D.jb_13,4)}</span></div>`}
+  sl.addEventListener("input",t);t();
+  const K=[["SARIMA(2,1,1)(0,1,1,12)","Grid winner"],["ARIMA(3,1,3)","ARIMA(3,1,3), no seasonal part"],["Model A","Model A: (1,1,0)(0,1,1,12)"],["Model B","Model B: (1,1,1)(0,1,1,12)"]];
+  let cur=0;const bx=$("#k_btns");K.forEach((x,i)=>{const b=document.createElement("button");b.textContent=x[1];b.onclick=()=>{cur=i;d()};bx.appendChild(b)});
+  const msg={0:"Passes every check: no autocorrelation left, zero mean, normal.","1":"Fails all three. The residual ACF has a tall bar at lag 12: a yearly term is missing.","2":"Fails: the Ljung-Box p-value at lag 12 is 0.0121, so correlation is left in its residuals, even though its 2024 MAPE (2.30%) looks better than the winner's 2.93%.","3":"Passes, but only just: 0.0568 and 0.0724 are close to 0.05."};
+  function d(){const c=D.chk[K[cur][0]],ok=v=>v>=0.05?"✓":"✗",pv=v=>v<0.0001?"0.0000":nf(v,4);
+    $("#k_tab").innerHTML=`<tr><th>Check (${K[cur][1]})</th><th class="num">Value</th><th class="num">p-value</th><th>Result</th></tr><tr><td>Zero mean (t-test)</td><td class="num">${nf(c.mean,2)} (std ${nf(c.std,1)})</td><td class="num">${pv(c.t)}</td><td>${ok(c.t)}</td></tr><tr><td>Ljung-Box, lag 12</td><td class="num">–</td><td class="num">${pv(c.lb12)}</td><td>${ok(c.lb12)}</td></tr><tr><td>Ljung-Box, lag 24</td><td class="num">–</td><td class="num">${pv(c.lb24)}</td><td>${ok(c.lb24)}</td></tr><tr><td>Jarque-Bera (normality)</td><td class="num">–</td><td class="num">${pv(c.jb)}</td><td>${ok(c.jb)}</td></tr>${c.mape!=null?`<tr><td>MAPE on 2024</td><td class="num">${nf(c.mape,2)}%</td><td class="num">–</td><td></td></tr>`:""}`;
+    const acfv=cur===1?D.ns_acf:(cur===0?D.res_acf:null);
+    if(acfv)stem($("#k_acf"),{vals:acfv,band:1.96/Math.sqrt(cur===1?155:143),hl:cur===1?[12]:[],every:6,h:170,aria:"Residual ACF"});else $("#k_acf").replaceChildren();
+    $("#k_msg").textContent=msg[cur===1?"1":cur];$$("#k_btns button").forEach((b,i)=>b.setAttribute("aria-pressed",i===cur))}
+  d();
+})();
+
+/* 10 CV */
+(function(){
+  const sc={};Object.keys(F).forEach(k=>sc[k]=mape(TE,F[k]));sc["auto_arima"]=D.auto[3];
+  const ks=Object.keys(sc).sort((a,b)=>sc[a]-sc[b]);
+  const Wd=720,rh=26,H=ks.length*rh+34,pl=210,pr=60,mx=Math.max(...ks.map(k=>sc[k]))*1.08,x=v=>pl+v/mx*(Wd-pl-pr);
+  const svg=el("svg",{viewBox:`0 0 ${Wd} ${H}`,role:"img","aria-label":"MAPE of every model on 2024"});
+  niceTicks(0,mx,5).forEach(t=>{el("line",{x1:x(t),x2:x(t),y1:4,y2:H-24,stroke:"#E3D7BC"},svg);const tx=el("text",{x:x(t),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=t+"%"});
+  ks.forEach((k,i)=>{const y=8+i*rh,seas=k.includes("SARIMA")||k==="auto_arima";const t=el("text",{x:pl-8,y:y+16,"text-anchor":"end","font-size":12.5,fill:C.ink},svg);t.textContent=k;el("rect",{x:pl,y:y+3,width:x(sc[k])-pl,height:17,rx:3,fill:seas?C.o:"#F5DDBD",stroke:seas?"none":C.b,"stroke-dasharray":seas?"":"4 3"},svg);const v=el("text",{x:x(sc[k])+6,y:y+16,"font-size":12,"font-weight":700,fill:C.ink},svg);v.textContent=nf(sc[k],2)+"%"});
+  el("line",{x1:x(5),x2:x(5),y1:4,y2:H-24,stroke:C.r,"stroke-width":2.2,"stroke-dasharray":"6 4"},svg);
+  $("#l2_chart").replaceChildren(svg);
+  // folds
+  const FW=720,FH=5*34+30,pl2=70,tx=d=>{const [yy,mm]=d.split("-").map(Number);return (yy-2011)*12+mm-1};
+  const s2=el("svg",{viewBox:`0 0 ${FW} ${FH}`,role:"img","aria-label":"Rolling-origin folds: training and test windows"});
+  const xs=m=>pl2+m/156*(FW-pl2-14);
+  D.folds.forEach((f,i)=>{const y=18+i*34,a=tx(f[0]),b=tx(f[1])+1,c=tx(f[3]),e=tx(f[4])+1;
+    const t=el("text",{x:pl2-8,y:y+6,"text-anchor":"end","font-size":12.5,fill:C.ink},s2);t.textContent="fold "+(i+1);
+    el("rect",{x:xs(a),y:y-4,width:xs(b)-xs(a),height:14,rx:3,fill:C.b,"fill-opacity":.75},s2);
+    el("rect",{x:xs(c),y:y-4,width:xs(e)-xs(c),height:14,rx:3,fill:C.o},s2);
+    const l=el("text",{x:xs(a)+8,y:y+7,"text-anchor":"start","font-size":11,fill:"#FFFBF1"},s2);l.textContent=`${f[2]} months → ${f[3].slice(0,4)}`});
+  [2011,2015,2019,2023].forEach(yv=>{const t=el("text",{x:xs((yv-2011)*12),y:FH-6,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},s2);t.textContent=yv});
+  $("#f_chart").replaceChildren(s2);
+  $("#f_chart").insertAdjacentHTML("beforeend",'<div class="lg"><span><i class="sw" style="background:#5B4330"></i>train</span><span><i class="sw" style="background:#B8530F"></i>test</span></div>');
+  barChart($("#b_chart"),{labels:Object.keys(D.cv["seasonal naive"]),series:[{name:"MAPE",v:Object.values(D.cv["seasonal naive"]),color:C.o}],h:210,ymin:0,vFmt:v=>nf(v,2)+"%",yFmt:v=>nf(v,0),hline:{v:5,label:"5% target"},aria:"Seasonal naive MAPE by fold"});
+})();
+
+/* 11 final */
+(function(){
+  const names=Object.keys(D.cv),yrs=Object.keys(D.cv[names[0]]);
+  const cols={"seasonal naive":C.g,"Holt-Winters":C.a,"SARIMA(211)(011)":C.o,"SARIMA(313)(111)":C.b,"auto_arima":C.r};
+  let view="year";const sl=$("#v_t");
+  function d(){const T=+sl.value;$("#v_to").textContent=nf(T,1);
+    if(view==="year"){
+      barChart($("#v_chart"),{labels:yrs,series:names.map((n,i)=>({name:n,v:yrs.map(y=>D.cv[n][y]),color:cols[n],hatch:i%2===1})),h:260,ymin:0,vFmt:v=>nf(v,1),yFmt:v=>nf(v,0),hline:{v:T,label:"target"},labelsOn:false,aria:"MAPE by fold for each recipe"});
+      legend($("#v_lg"),names.map(n=>({name:n,color:cols[n],w:6})));
+      $("#v_tab").innerHTML="<tr><th>Fold (test year)</th>"+names.map(n=>`<th class="num">${n}</th>`).join("")+"</tr>"+yrs.map(y=>`<tr><td>${y}</td>${names.map(n=>{const v=D.cv[n][y];return `<td class="num"${v>T?' style="color:var(--rust);font-weight:700"':""}>${nf(v,2)}</td>`}).join("")}</tr>`).join("");
+      $("#v_msg").textContent="Values above the target are shown in bold rust. SARIMA wins 2019, 2020 and 2023; Holt-Winters wins 2021 and 2022."}
+    else{
+      const mean=names.map(n=>avg(yrs.map(y=>D.cv[n][y]))),worst=names.map(n=>Math.max(...yrs.map(y=>D.cv[n][y])));
+      const ord=names.map((n,i)=>i).sort((a,b)=>mean[a]-mean[b]);
+      barChart($("#v_chart"),{labels:ord.map(i=>names[i]),series:[{name:"Mean MAPE",v:ord.map(i=>mean[i]),color:C.o},{name:"Worst fold",v:ord.map(i=>worst[i]),color:C.b,hatch:true}],h:260,ymin:0,vFmt:v=>nf(v,2),yFmt:v=>nf(v,0),hline:{v:T,label:"target"},aria:"Mean and worst fold MAPE"});
+      $("#v_lg").innerHTML='<div class="lg"><span><i class="sw" style="background:#B8530F"></i>mean MAPE</span><span><i class="sw" style="background:repeating-linear-gradient(45deg,#F5DDBD 0 3px,#5B4330 3px 6px)"></i>worst fold</span></div>';
+      $("#v_tab").innerHTML="<tr><th>Recipe</th><th class='num'>Mean MAPE</th><th class='num'>Worst fold</th></tr>"+ord.map(i=>`<tr${i===ord[0]?' class="best"':""}><td>${names[i]}</td><td class="num">${nf(mean[i],2)}</td><td class="num">${nf(worst[i],2)}</td></tr>`).join("");
+      $("#v_msg").textContent="Every model beats seasonal naive on average. No recipe stays below 5% in every year."}
+    $$("#v_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===view))}
+  $$("#v_btns button").forEach(b=>b.onclick=()=>{view=b.dataset.k;d()});sl.addEventListener("input",d);d();
+  const f=D.fin,ser=[hist(),act,{name:"SARIMA(2,1,1)(0,1,1,12)",y:padF(f.mean),color:C.o,w:3},{name:"Holt-Winters",y:padF(f.hw),color:C.b,w:2.8,dash:"7 4"}];
+  lineChart($("#p_chart"),{labels:L48,xt:xt48,series:ser,bands:[{lo:padF(f.lo),hi:padF(f.hi),color:"#D9792B"}],h:260,aria:"VoltNest 2024 forecasts and the 95% range"});legend($("#p_lg"),ser);
+  $("#p_lg").insertAdjacentHTML("beforeend",'<div class="lg"><span><svg width="30" height="12"><rect width="30" height="12" fill="#D9792B" fill-opacity=".35"/></svg>SARIMA 95% range</span></div>');
+  $("#p_tab").innerHTML="<tr><th>Month</th><th class='num'>Low</th><th class='num'>SARIMA</th><th class='num'>High</th><th class='num'>Holt-Winters</th><th class='num'>Actual</th></tr>"+MN.map((m,i)=>`<tr><td>${m} 2024</td><td class="num">${fmt(f.lo[i])}</td><td class="num"><b>${fmt(f.mean[i])}</b></td><td class="num">${fmt(f.hi[i])}</td><td class="num">${fmt(f.hw[i])}</td><td class="num">${fmt(TE[i])}${TE[i]<f.lo[i]||TE[i]>f.hi[i]?" ✗":""}</td></tr>`).join("");
+})();
+
+const Q=[
+ {q:"How do the weights on past values in an AR(p) model differ from those in Simple Exponential Smoothing?",o:["AR weights must shrink steadily with age, while SES weights can take any shape","AR learns each weight from data, while SES ties all of them to one alpha value","AR gives equal weight to all p lags, while SES gives weight to the latest one only","AR weights are chosen by hand from the PACF, while SES weights are never chosen"],a:1,e:"An AR(p) model estimates a separate coefficient for each lag, and these can rise, fall or be negative, while every SES weight is computed from the single factor α. Option A has the two models swapped, since the shrinking shape belongs to SES. Equal weights describe a plain moving average, and SES gives some weight to all past values, so C is wrong on both counts. The PACF helps to choose how many lags to use, not the values of the weights, and SES weights follow from the chosen or fitted α (D)."},
+ {q:"Which of these is not a hyperparameter of an ARMA model?",o:["The order of auto regression, written as p","The order of moving average, written as q","None of them, as all three belong to ARMA","The order of differencing, written as d"],a:3,e:"ARMA has two hyperparameters, p and q, and it expects a series that is already stationary, so the differencing order d is not part of it; d appears in ARIMA. The AR order p sets how many past values are used (A), and the MA order q sets how many past errors are used (B), so both are hyperparameters. Since d does not belong to ARMA, option C is false."},
+ {q:"How does the SARIMA model differ from the ARIMA model?",o:["It adds seasonal AR, differencing and MA terms that act at lags of period s","It works only on seasonal data, while ARIMA works only on non-seasonal data","It is a shorter version of ARIMA that needs fewer parameters and less computing","It replaces the ordinary differencing of ARIMA with a more robust smoothing step"],a:0,e:"SARIMA keeps the (p, d, q) part and adds (P, D, Q)s, which look back whole seasons. It is not restricted in that way: setting the seasonal orders to zero gives ARIMA, and ARIMA can be run on seasonal data, only with poor results (B). SARIMA is an extension, usually with more parameters and more computation (C). It keeps ordinary differencing and adds a seasonal difference, with no smoothing step in its place (D)."},
+ {q:"A larger SARIMA has a lower training error than a smaller one but a higher error on the next year. What is the best reading?",o:["The larger model is better, because training error is the most reliable measure","The smaller model is underfitting, so even more terms should be added to both","The extra terms are fitting noise, so the smaller model is the safer choice","The two errors cannot differ like this, so the data must contain a mistake"],a:2,e:"Extra parameters can follow random movements in the training data, which lowers the training error and hurts the forecast of new data; this is overfitting. Training error always tends to fall as terms are added, so it cannot be the deciding measure (A). The smaller model does better on unseen data, so adding more terms goes in the wrong direction (B). Such a gap is common and expected with large orders, and it does not indicate a data error (D)."},
+ {q:"auto_arima returns a model with the best score on the last year. Can its AIC be compared with the AIC of a grid-search model that used D = 1?",o:["Yes, because AIC is always comparable between any two fitted models","Yes, but only if the auto_arima model has the larger number of parameters","No, because the two models were fitted to differently differenced data","No, because auto_arima never reports an AIC value that can be read"],a:2,e:"AIC values are comparable only between models fitted to the same differenced data. auto_arima chose D = 0 and the grid used D = 1, so the likelihoods describe different series and the numbers (1831.3 and 1648.8) mean nothing next to each other. AIC is not comparable between any two models (A), the number of parameters does not fix this (B), and auto_arima does report an AIC (D)."},
+ {q:"Why is rolling-origin validation better than one holdout year for comparing two forecasting models?",o:["It shuffles the months, so each model is trained on a more varied sample of data","It scores both models on several later periods, each trained on the past only","It lets each model see the test months first, which gives a fairer final score","It always raises the accuracy of both models, so the final choice becomes easy"],a:1,e:"Several origins show how each model behaves across different periods, and each forecast uses only earlier data, which matches real use. Shuffling breaks the time order and leaks the future into training (A). Seeing the test months before forecasting is leakage and gives a falsely good score (C). The method does not change how accurate a model is, it measures it more reliably, and the result can still be a close call (D)."}];
+$$(".quiz").forEach(box=>{
+  const d=Q[+box.dataset.q];let done=false;
+  box.innerHTML=`<div class="ct" style="color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase">Check your understanding</div><div class="q"></div><div class="os"></div><div class="fb" role="status"></div>`;
+  $(".q",box).textContent=d.q;
+  d.o.forEach((t,i)=>{const b=document.createElement("button");b.className="opt";b.type="button";b.innerHTML="<b>"+"ABCD"[i]+".</b> ";b.appendChild(document.createTextNode(t));
+    b.onclick=()=>{const fb=$(".fb",box);if(i===d.a){done=true;b.classList.add("right");$$(".opt",box).forEach(x=>x.disabled=true);fb.innerHTML="<b>Correct.</b> ";fb.appendChild(document.createTextNode(d.e))}else{b.classList.add("wrong");b.disabled=true;fb.innerHTML="<b>Not quite — try another option.</b>"}fb.classList.add("show")};
+    $(".os",box).appendChild(b)});
+});
+
+})();
+</script>
+</body>
+</html>
