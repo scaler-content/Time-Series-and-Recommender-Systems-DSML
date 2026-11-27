@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stationarity and Memory</title>
+<style>
+
+:root{
+  --bg:#F1E8D6; --paper:#FAF4E6; --card:#FFFBF1; --sand:#E7DBC2; --line:#D6C7A9;
+  --ink:#33291E; --muted:#66573F; --brown:#5B4330; --deep:#3B2A1C;
+  --orange:#B8530F; --orange-ink:#9C4509; --orange-btn:#A84A0B; --orange-2:#D9792B; --amber:#E3A94B; --tint:#F5DDBD; --tint-2:#FBEBD3; --rust:#8A3410;
+  --radius:14px; --shadow:0 1px 2px rgba(59,42,28,.08),0 6px 18px rgba(59,42,28,.06);
+  --serif:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7}
+a{color:var(--orange-ink)}
+:focus-visible{outline:3px solid var(--orange-2);outline-offset:2px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* top nav */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(250,244,230,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.topbar nav{max-width:1080px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 16px;scrollbar-width:thin}
+.topbar a{white-space:nowrap;text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px}
+.topbar a:hover{background:var(--tint-2);color:var(--orange-ink)}
+.topbar a.active{background:var(--orange-btn);color:#fff}
+.progress{height:3px;background:transparent}
+.progress i{display:block;height:100%;width:0;background:var(--orange-2)}
+
+/* hero */
+.hero{background:var(--deep);color:#F3E7D0;padding:72px 20px 64px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(217,121,43,.35),rgba(217,121,43,0) 70%)}
+.hero .wrap{max-width:860px;margin:0 auto;position:relative;z-index:1}
+.eyebrow{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700}
+.hero h1{font-family:var(--serif);font-size:clamp(32px,5.4vw,54px);line-height:1.12;margin:12px 0 18px;font-weight:700;color:#FFF6E4}
+.hero p{font-size:19px;max-width:700px;color:#E6D6B8;margin:0 0 22px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid rgba(243,231,208,.35);border-radius:999px;padding:4px 14px;font-size:14px;color:#F3E7D0}
+
+/* layout */
+main{max-width:860px;margin:0 auto;padding:12px 20px 60px}
+section{padding-top:48px}
+section>h2{font-family:var(--serif);font-size:clamp(26px,3.6vw,34px);line-height:1.2;margin:0 0 6px;color:var(--deep)}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-ink)}
+h3{font-family:var(--serif);font-size:22px;margin:34px 0 8px;color:var(--deep)}
+h4{margin:20px 0 6px;font-size:17px;color:var(--brown)}
+p{margin:0 0 14px}
+ul,ol{padding-left:22px;margin:0 0 14px}
+li{margin-bottom:6px}
+code{font-family:var(--mono);font-size:.88em;background:var(--sand);padding:1px 6px;border-radius:5px}
+pre{background:#2F2217;color:#F2E5CC;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:14px;line-height:1.55;margin:10px 0 14px}
+pre code{background:none;padding:0;color:inherit;font-size:inherit}
+pre.out{background:var(--sand);color:var(--ink);border-left:4px solid var(--orange-2);border-radius:6px;margin-top:-6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:18px 0}
+.card>h4:first-child,.card>.ct{margin-top:0}
+.ct{font-weight:700;color:var(--deep);font-size:16px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:15px;margin-bottom:12px}
+.viz{border-top:5px solid var(--orange-2)}
+.viz .tag{display:inline-block;background:var(--tint);color:var(--rust);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 10px;border-radius:999px;margin-bottom:8px}
+.callout{background:var(--tint-2);border-left:5px solid var(--orange);border-radius:8px;padding:14px 18px;margin:18px 0}
+.callout b.h{display:block;color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.callout.note{background:var(--sand);border-left-color:var(--brown)}
+.callout.note b.h{color:var(--brown)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}body{font-size:16px}}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mini b{display:block;color:var(--deep);margin-bottom:2px}
+.mini .big{font-family:var(--serif);font-size:28px;color:var(--orange-ink);line-height:1.1}
+
+/* controls */
+button,.btn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border-radius:999px;border:1.5px solid var(--orange-btn);background:var(--card);color:var(--orange-ink);padding:6px 16px}
+button:hover{background:var(--tint-2)}
+button[aria-pressed="true"],button.on{background:var(--orange-btn);color:#fff}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+label{font-size:14px;font-weight:600;color:var(--brown)}
+input[type=range]{width:100%;accent-color:var(--orange-btn)}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;margin-bottom:12px}
+.ctrl output{font-family:var(--mono);color:var(--orange-ink);font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.chk input{accent-color:var(--orange-btn);width:18px;height:18px}
+
+/* tables */
+.tw{overflow-x:auto;margin:10px 0 14px}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--card)}
+th,td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--sand);color:var(--deep);font-size:14px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.hl td{background:var(--tint-2)}
+
+/* bars */
+.bar{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;margin:8px 0;font-size:15px}
+.bar .track{background:var(--sand);border-radius:6px;height:26px;overflow:hidden}
+.bar .fill{height:100%;border-radius:6px;transition:width .35s}
+.bar .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+@media(max-width:560px){.bar{grid-template-columns:1fr;gap:2px}.bar .v{text-align:left}}
+
+/* calendar grid */
+.cal{display:grid;grid-template-columns:42px repeat(12,minmax(0,1fr));gap:3px;font-size:11px;max-width:620px}
+.cal .hd,.cal .yr{color:var(--muted);font-weight:700;text-align:center;line-height:20px}
+.cal .yr{text-align:right;padding-right:4px}
+.cal .c{height:20px;border-radius:4px;background:var(--sand);border:1px solid var(--line);text-align:center;line-height:17px;color:var(--brown);font-size:11px}
+.cal .c.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange);color:var(--rust)}
+.cal .c.absent{background:transparent;border:1.5px dashed var(--rust);color:var(--rust);font-weight:700}
+.cal .c.blank{visibility:hidden}
+.cal .cnt{height:46px;display:flex;align-items:flex-end;justify-content:center}
+.cal .cnt i{display:block;width:100%;background:var(--orange);border-radius:3px 3px 0 0;position:relative}
+.cal .cnt i.top{background:var(--rust)}
+.cal .cn{text-align:center;font-weight:700;color:var(--deep);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:10px 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:18px;height:14px;border-radius:3px;background:var(--sand);border:1px solid var(--line)}
+.sw.empty{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.sw.absent{background:transparent;border:1.5px dashed var(--rust)}
+
+svg text{font-family:var(--sans)}
+svg{max-width:100%;height:auto;display:block}
+.mrow{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin:10px 0}
+.mrow div{border:1px solid var(--line);border-radius:6px;text-align:center;padding:8px 0;font-size:13px;font-weight:700;background:var(--sand);color:var(--brown)}
+.mrow .dip{background:var(--card);border:2px dashed var(--brown)}
+.mrow .peak{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+
+/* steps */
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.steps button{border-radius:10px}
+.stepbody{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 18px}
+
+/* quiz */
+.quiz{border-left:6px solid var(--orange)}
+.quiz .q{font-weight:600;margin-bottom:10px}
+.opt{display:block;width:100%;text-align:left;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:10px 14px;margin:6px 0;font-weight:500}
+.opt:hover{border-color:var(--orange-2);background:var(--tint-2)}
+.opt.right{background:var(--orange-btn);color:#fff;border-color:var(--rust)}
+.opt.wrong{border:2px dashed var(--rust);background:var(--paper)}
+.quiz .fb{display:none;margin-top:10px;background:var(--sand);border-radius:8px;padding:10px 14px;font-size:15px}
+.quiz .fb.show{display:block}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;padding:0}
+summary{cursor:pointer;padding:12px 18px;font-weight:700;color:var(--deep);list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--orange-ink);font-size:20px;line-height:1}
+details[open] summary::after{content:"–"}
+details .dbody{padding:0 18px 14px}
+details pre{margin-top:0}
+
+footer{background:var(--deep);color:#D9C7A4;text-align:center;padding:28px 20px;font-size:14px}
+
+.chw{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--deep);color:#F3E7D0;font-size:12.5px;line-height:1.45;padding:6px 10px;border-radius:8px;white-space:nowrap;z-index:5;display:none}
+.eq{font-family:var(--serif);font-size:19px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0;overflow-x:auto;text-align:center}
+.eq small{font-size:14px;color:var(--muted);font-family:var(--sans)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:6px 0 4px}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.faq{border-left:5px solid var(--amber);background:var(--card);border-radius:8px;padding:12px 16px;margin:16px 0}
+.faq b{color:var(--rust)}
+.cal .c.test{background:repeating-linear-gradient(45deg,var(--orange-2) 0 3px,var(--tint) 3px 6px);border-color:var(--orange)}
+.cal .c.tr{background:var(--sand)}
+.chips2{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips2 button{font-size:13px;padding:4px 12px}
+.chips2 button[aria-pressed="true"]{background:var(--orange-btn);color:#fff}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0}
+.kpi div{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.kpi b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi span{font-family:var(--serif);font-size:24px;color:var(--orange-ink)}
+input[type=number]{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+tr.best td{background:var(--tint)}
+select{font:inherit;width:100%;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+
+</style>
+</head>
+<body>
+<div class="topbar" role="banner">
+  <nav aria-label="Sections">
+    <a href="#open">The moving average</a><a href="#what">Stationary?</a><a href="#adf">ADF test</a><a href="#diff">Differencing</a><a href="#acf">ACF</a><a href="#pacf">PACF</a><a href="#bands">Bands &amp; period</a><a href="#corr">Correlation trap</a><a href="#ar">Auto regression</a><a href="#recap">Recap</a>
+  </nav>
+  <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Time Series &amp; Recommender System · Class 5</div>
+    <h1>Stationarity and Memory - Making a Series Predictable by Removing Structure</h1>
+    <p>Decide whether a series is stationary, make it stationary by differencing, read its memory with the ACF and PACF, avoid the correlation trap, and see why regression on past values is the first model for what is left.</p>
+    <div class="chips"><span class="chip">Case: Lanternly (finale)</span><span class="chip">144 months · Jan 2012 – Dec 2023</span><span class="chip">Python · statsmodels</span></div>
+  </div>
+</header>
+
+<main>
+<section id="intro" style="padding-top:36px">
+  <div class="callout note"><b class="h">About the data</b>This class reuses the Lanternly data from Class 4 and finishes the same story. <code>Units</code> is the series we study, and <code>Complaints</code> (late-delivery complaints per month) is a second series used in Section 8. The 144 months, January 2012 to December 2023, are clean, using the steps from Class 1. The data is simulated for teaching; the numbers are not real figures of any company. The six simulated series in Section 2 use a fixed random seed, so they are the same every time.</div>
+</section>
+
+<section id="open">
+  <div class="kicker">1 · Cold open</div>
+  <h2>The average that keeps moving</h2>
+  <p>Last class we gave the Lanternly manager a forecast and a range. Today she comes back with a sharper question: <i>"Your model took out the trend and the season. Is there anything left in what remains? And can I trust a statistic like 'the average month' if it keeps changing?"</i> We first ask whether the average is even a stable number.</p>
+  <div class="card viz"><span class="tag">Visualizer · rolling mean and spread</span>
+    <div class="ct">12-month rolling mean</div><div id="o_mean"></div>
+    <div class="ct" style="margin-top:10px">12-month rolling standard deviation</div><div id="o_std"></div>
+    <div class="tw" style="margin-top:10px"><table id="o_tab"></table></div>
+    <p class="sub" style="margin:6px 0 0">The "average month" is 845 units in 2012, 1,607 in 2017 and 2,909 in 2023, and the spread grows from 210 to 391 to 746 units. Both rolling lines climb all the time. There is no single average and no single spread: they depend on when you look.</p>
+  </div>
+  <div class="faq"><b>If the average depends on the date, what does it mean to say that a month is "above average"?</b><br>It does not mean much unless we say which period the average is from. Many statistical tools assume that the average and the spread are fixed numbers, so that what we learn from past data still applies to the future. A series that satisfies this is called <b>stationary</b>, and this class is about turning ours into one.</div>
+  <h3>The plan</h3>
+  <div class="grid2">
+    <div class="mini"><b>1</b> Learn what stationary means, and test it with the ADF test.</div>
+    <div class="mini"><b>2</b> Remove structure by differencing until the series is stationary.</div>
+    <div class="mini"><b>3</b> Read the memory of what is left with the ACF and PACF.</div>
+    <div class="mini"><b>4</b> Avoid the correlation trap.</div>
+    <div class="mini"><b>5</b> Take the first step towards a model of that memory: regression on lags.</div>
+  </div>
+</section>
+
+<section id="what">
+  <div class="kicker">2 · What stationary means</div>
+  <h2>Stationary vs non-stationary: a visual exercise</h2>
+  <p>A series y<sub>t</sub> is (weakly) <b>stationary</b> if three things do not depend on the time 𝑡:</p>
+  <div class="eq">E[y<sub>t</sub>] = μ, &nbsp; Var(y<sub>t</sub>) = σ², &nbsp; Cov(y<sub>t</sub>, y<sub>t+k</sub>) = γ<sub>k</sub> depends only on the lag 𝑘.</div>
+  <p>A stationary series is like a heartbeat on a monitor: it does not matter which minute you look at, the picture looks about the same. A series with a trend, a yearly cycle, or a spread that keeps growing looks different in different minutes, so it is not stationary.</p>
+  <p>Here are six simulated series of 144 points. For each panel, decide: stationary or not? Then reveal what the numbers say.</p>
+  <div class="card viz"><span class="tag">Visualizer · six simulated series</span>
+    <div class="btnrow"><button id="s_rev" aria-pressed="false">Reveal what the numbers say</button></div>
+    <div class="grid3" id="s_grid"></div>
+    <div class="tw" style="margin-top:10px"><table id="s_tab"></table></div>
+  </div>
+  <div class="grid2">
+    <div class="mini"><b>a · pure noise</b>Stationary: the mean (−0.04 and 0.01) and the spread (0.92 and 1.06) are the same in both halves.</div>
+    <div class="mini"><b>f · short memory</b>Stationary too, but its memory makes the halves differ a little (mean 0.16 and −0.45, spread 0.93 and 1.40). It wanders, but keeps coming back to the same level of 0.</div>
+    <div class="mini"><b>b · trend plus noise</b>Not stationary: the mean moves from 1.86 to 5.31.</div>
+    <div class="mini"><b>d · random walk</b>Not stationary: the mean drifts from −5.15 to −11.90 and the spread grows. It has no fixed level to return to.</div>
+    <div class="mini"><b>e · growing spread</b>Not stationary: the standard deviation goes from 1.32 to 3.71 while the mean stays near 0. (Its range of monthly means, 3.07, is high only because the very noisy last years dominate each month's average.)</div>
+    <div class="mini"><b>c · yearly wave</b>The tricky one. The two halves look identical, but the calendar-month means differ by 4.15 units, against 0.8 to 1.2 for a, b, d and f, which is what noise alone produces. A repeating pattern means that the mean depends on 𝑡, so a seasonal series is not stationary.</div>
+  </div>
+  <p>Categorising a series by eye is subjective. Some people would call f non-stationary because it has bumps. That is why we need a test.</p>
+</section>
+
+<section id="adf">
+  <div class="kicker">3 · A formal test</div>
+  <h2>The ADF test and its p-value rule</h2>
+  <p>The Augmented Dickey-Fuller (ADF) test asks one specific question: does the series behave like a random walk? It fits a regression of the change on the previous value:</p>
+  <div class="eq">Δy<sub>t</sub> = a + γ·y<sub>t−1</sub> + Σ<sub>i=1..p</sub> δ<sub>i</sub>·Δy<sub>t−i</sub> + ε<sub>t</sub>, &nbsp; Δy<sub>t</sub> = y<sub>t</sub> − y<sub>t−1</sub></div>
+  <ul>
+    <li>The null hypothesis H<sub>0</sub> is γ = 0: the series has a <b>unit root</b> (it is a random walk, non-stationary).</li>
+    <li>If γ &lt; 0, a high value tends to be followed by a fall and a low value by a rise, and the series is pulled back to a level: it is stationary.</li>
+    <li>The test reports a p-value. <b>The rule:</b> if the p-value is below 0.05, reject H<sub>0</sub> and call the series stationary. Otherwise we cannot.</li>
+  </ul>
+  <p>The null hypothesis is "this is a drunk walker with no home". The test collects evidence that the walker is pulled back home. If the evidence is strong enough, a p-value below 0.05, we say the series has a home: a stationary series.</p>
+  <div class="card viz"><span class="tag">Visualizer · the regression behind the test</span>
+    <div class="sub">The simplest version of the regression (no extra lags and a constant, <code>maxlag=0</code>) on the random walk d, next to the library.</div>
+    <div class="kpi"><div><b>By hand: γ</b><span>−0.0142</span></div><div><b>By hand: t-statistic</b><span>−0.7668</span></div><div><b>Library statistic</b><span>−0.7668</span></div><div><b>Library p-value</b><span>0.8287</span></div></div>
+    <p class="sub" style="margin:6px 0 0">The t-statistic of the slope on the previous value is the ADF statistic: the same number. γ is only −0.014, so almost no pull back to a level, and the p-value is 0.83, far above 0.05. The library converts the statistic into a p-value using special critical values, because the usual t-table is not valid when the null is a random walk.</p>
+  </div>
+<pre><code>def adf_test(series, name="series", show=True):
+    pvalue = adfuller(series.dropna())[1]
+    verdict = "stationary" if pvalue &lt; 0.05 else "not stationary"
+    if show:
+        print(f"{name:28s} p-value = {pvalue:.4f}  -&gt;  {verdict}")
+    return pvalue</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · the eye vs the test</span>
+    <div class="ctrl"><div><label for="a_th">Threshold: p &lt; <output id="a_tho"></output></label><input id="a_th" type="range" min="0.01" max="0.10" step="0.01" value="0.05"></div></div>
+    <div id="a_bars"></div>
+    <p class="sub" style="margin:6px 0 0">The test agrees with the eye on b (p = 0.79), d (p = 0.83), and on the stationary a and f (p near 0). Two results are a surprise: the seasonal series c (p = 0.0068) and the growing-spread series e (p = 0.0000) both pass. ADF only looks for a unit root and a trend-like drift; it does not check for a repeating pattern or a changing spread. Lanternly gets p = 0.996, so it is clearly not stationary, which matches what we saw: trend, season and growing spread.</p>
+  </div>
+  <div class="callout"><b class="h">Important</b>"p below 0.05" does not prove that a series is stationary in the full sense. Use the test together with the plot. A pass on the ADF test means "no unit root", and you still have to look for seasonality and changing variance.</div>
+  <div class="card quiz" data-q="0"></div>
+</section>
+
+<section id="diff">
+  <div class="kicker">4 · Removing structure</div>
+  <h2>De-trending and de-seasonalising by differencing</h2>
+  <p>To make a series stationary we remove its structure. The simplest tool is <b>differencing</b>: subtract an earlier value.</p>
+  <div class="grid2">
+    <div class="mini"><b>Removing a trend</b>If y<sub>t</sub> = a + b·t + e<sub>t</sub>, then y<sub>t</sub> − y<sub>t−1</sub> = b + (e<sub>t</sub> − e<sub>t−1</sub>): the trend turns into a constant 𝑏 and the rest has a stable mean. It is the discrete version of a derivative, written Δy<sub>t</sub> or <code>diff(1)</code>. A curved trend may need a second difference.</div>
+    <div class="mini"><b>Removing a seasonality</b>With a seasonal period of 𝑚, subtract the value from one full cycle ago: y<sub>t</sub> − y<sub>t−m</sub>, written <code>diff(m)</code>. For monthly data with a yearly cycle, 𝑚 = 12.</div>
+  </div>
+  <p>To remove a hill from a road profile, record only how much the road goes up or down at each step and ignore the height. To remove the yearly cycle, compare each month only with the same month one year ago.</p>
+  <div class="card viz"><span class="tag">Visualizer · try each transformation</span>
+    <div class="btnrow" id="d_btns" role="group" aria-label="Transformation"></div>
+    <div id="d_chart"></div>
+    <div class="kpi" id="d_kpi" aria-live="polite"></div>
+    <p id="d_msg" class="sub" style="margin:6px 0 0"></p>
+    <div class="tw" style="margin-top:10px"><table id="d_tab"></table></div>
+  </div>
+  <p>Each difference costs observations: 1 for <code>diff(1)</code> and 12 more for <code>diff(12)</code>, so 13 in total, which is why 131 points are left. The "log" is the multiplicative idea from Class 4 in a new form: the log turns ratios into differences. We keep the last series, called <code>stationary</code>, for the rest of the class. Everything that remains in it is what trend and season could not explain, and its remaining structure is its <b>memory</b>.</p>
+<pre><code>log_y = np.log(y)
+stationary = log_y.diff().diff(12).dropna()      # 131 points</code></pre>
+  <div class="faq"><b>Can we simply difference until the ADF p-value is below 0.05?</b><br>That is a trap. Here <code>diff(1)</code> alone already passes (p = 0.034) but is not clean. Over-differencing is also harmful: it creates a false negative correlation between neighbours and adds noise. Use the minimum number of differences that makes the plot and the test both look stationary, usually not more than 2 in total.</div>
+  <details><summary>Practice · Automate the number of differences, and check it</summary><div class="dbody">
+    <p>It is tempting to ask an AI assistant for a function that chooses the differencing orders automatically. Test whether the answer is good.</p>
+    <ol>
+      <li>Prompt an assistant: "Write a Python function choose_differencing(series, m) that tries (d, D) in {0, 1, 2} x {0, 1} on a monthly pandas Series, applies diff(1) d times and diff(m) D times, runs the ADF test with statsmodels, and returns the smallest combination with a p-value below 0.05."</li>
+      <li><b>Verify, do not trust:</b> run it on <code>y</code> with m = 12 and compare with the table above, where <code>diff(1)</code> alone has p = 0.034, and look at the plot of that series. Does the function's choice still contain a yearly wave? If so, say what test or plot the function is missing.</li>
+      <li><b>Integrate:</b> add a second condition, for example that the autocorrelation at lag 𝑚 of the result must be below 0.5, and run it again.</li>
+    </ol>
+    <p style="margin:0"><b>Reflect:</b> why is a statistical test alone not enough to decide how many times to difference?</p></div></details>
+  <div class="card quiz" data-q="1"></div>
+</section>
+
+<section id="acf">
+  <div class="kicker">5 · Memory, part one</div>
+  <h2>Autocorrelation and the ACF plot</h2>
+  <p>How much does a series remember its own past? Pair each value with the value 𝑘 steps earlier and compute the correlation. For a stationary series with mean ȳ the autocorrelation at lag 𝑘 is:</p>
+  <div class="eq">r<sub>k</sub> = Σ<sub>t=k+1..N</sub> (y<sub>t</sub> − ȳ)(y<sub>t−k</sub> − ȳ) / Σ<sub>t=1..N</sub> (y<sub>t</sub> − ȳ)², &nbsp; −1 ≤ r<sub>k</sub> ≤ 1</div>
+  <p>If I tell you the sales of this month, how much does it tell you about the sales three months ago, or twelve months ago? The autocorrelation is the answer in one number between −1 and 1, for every lag. In code, <code>shift(k)</code> slides the series down by 𝑘 rows (creating 𝑘 missing values at the top, which we skip), and <code>np.corrcoef</code> computes the Pearson correlation.</p>
+  <div class="card viz"><span class="tag">Visualizer · by hand vs library</span>
+    <div class="tw"><table><tr><th class="num">Lag</th><th class="num">By hand (shift + corrcoef)</th><th class="num">statsmodels acf</th></tr>
+    <tr><td class="num">1</td><td class="num">−0.459</td><td class="num">−0.455</td></tr><tr><td class="num">6</td><td class="num">−0.054</td><td class="num">−0.051</td></tr><tr><td class="num">12</td><td class="num">−0.521</td><td class="num">−0.480</td></tr><tr><td class="num">13</td><td class="num">0.421</td><td class="num">0.385</td></tr></table></div>
+    <p class="sub" style="margin:6px 0 0">They are close but not the same: the library uses the one overall mean and one overall variance for every lag, as in the formula above, while <code>corrcoef</code> recomputes the mean and variance for each shifted pair. On a stationary series the difference is small; on a series with a trend the two versions can be very different, which is one more reason to compute the ACF on a stationary series.</p>
+  </div>
+  <p>Now the plots. Choose which version of the series to look at.</p>
+  <div class="card viz"><span class="tag">Visualizer · ACF explorer</span>
+    <div class="btnrow" id="f_btns" role="group" aria-label="Series"><button data-k="raw" aria-pressed="false">Raw units</button><button data-k="d1" aria-pressed="false">After diff(1)</button><button data-k="st" aria-pressed="true">After log, diff(1), diff(12)</button></div>
+    <div id="f_chart"></div>
+    <p id="f_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <div class="faq"><b>What does a negative correlation at lag 1 mean for the sales of this month?</b><br>If the stationary series was above its usual level last month, it tends to be below its usual level this month, and the other way around. Part of this is the footprint of differencing: taking differences often creates a negative lag-1 correlation.</div>
+  <details><summary>Practice · Recompute the ACF from the formula</summary><div class="dbody">
+    <ol>
+      <li>Prompt an assistant: "Write a numpy function my_acf(x, k) that returns the sample autocorrelation at lag k using r_k = sum((x[t]-mean)*(x[t-k]-mean)) / sum((x-mean)**2), with the mean and the variance taken over the whole series. Do not use statsmodels."</li>
+      <li><b>Verify, do not trust:</b> call it on <code>stationary.values</code> for lags 1, 12 and 13. The correct values are −0.455, −0.480 and 0.385. If the assistant used <code>np.corrcoef</code> on shifted pairs, you will see −0.459, −0.521 and 0.421: explain the difference.</li>
+      <li><b>Integrate:</b> add a loop that computes <code>my_acf</code> for lags 1 to 24, plot it next to <code>plot_acf</code>, and check that the two agree.</li>
+    </ol>
+    <p style="margin:0"><b>Reflect:</b> why does the formula divide by the variance of the whole series for every lag?</p></div></details>
+</section>
+
+<section id="pacf">
+  <div class="kicker">6 · Memory, part two</div>
+  <h2>Partial autocorrelation and the PACF plot</h2>
+  <p>The ACF at lag 12 mixes two things: the direct link between y<sub>t</sub> and y<sub>t−12</sub>, and the indirect links that pass through the months in between (y<sub>t−12</sub> affects y<sub>t−11</sub>, which affects y<sub>t−10</sub>, and so on until y<sub>t</sub>). The <b>partial autocorrelation</b> at lag 𝑘 is the correlation between y<sub>t</sub> and y<sub>t−k</sub> after removing the effect of the lags 1, …, 𝑘−1.</p>
+  <p>Suppose you want to know whether your grandmother's recipe influences your cooking. Your mother learned it from her and you learned it from your mother, so there is a correlation anyway. The partial autocorrelation asks: once I account for what my mother did, is there any extra link left from my grandmother?</p>
+  <p>To compute it by hand at lag 2: remove the effect of lag 1 from both y<sub>t</sub> and y<sub>t−2</sub> with a regression, then correlate what is left over (the residuals).</p>
+<pre><code>X = sm.add_constant(y_lag1)
+left_t    = sm.OLS(y_t,    X).fit().resid     # what lag 1 does not explain in y_t
+left_lag2 = sm.OLS(y_lag2, X).fit().resid     # what lag 1 does not explain in y_(t-2)
+np.corrcoef(left_t, left_lag2)[0, 1]</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · lag 2, three ways</span>
+    <div id="p_bars"></div>
+    <p class="sub" style="margin:6px 0 0">The partial autocorrelation at lag 2, built from the leftovers, is −0.418, and the library with the same method (<code>method='ols'</code>) gives −0.416. The ordinary autocorrelation at lag 2 is only −0.111, so once lag 1 is removed, lag 2 stands out clearly: the indirect path through lag 1 was hiding it. The default method, <code>ywm</code>, gives −0.409, a small difference because it estimates the same quantity in a different way.</p>
+  </div>
+  <div class="card viz"><span class="tag">Visualizer · PACF explorer</span>
+    <div class="btnrow" id="q_btns" role="group" aria-label="Series"><button data-k="raw" aria-pressed="false">Raw units</button><button data-k="st" aria-pressed="true">After log, diff(1), diff(12)</button></div>
+    <div id="q_chart"></div>
+    <p id="q_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <div class="callout"><b class="h">Important</b>The ACF and PACF answer different questions. The <b>ACF</b> shows the total link at each lag, including indirect ones, and is the right tool for <b>finding a seasonal period</b>. The <b>PACF</b> shows only the direct link, and is the tool for <b>deciding how many past values</b> are worth using in a regression. We use the second one in the last section.</div>
+  <div class="card quiz" data-q="2"></div>
+</section>
+
+<section id="bands">
+  <div class="kicker">7 · What counts as significant</div>
+  <h2>Confidence bands and finding the seasonal period m</h2>
+  <p>The shaded band in the ACF and PACF plots shows what could happen by chance. For a series of 𝑁 points with no memory at all, each autocorrelation is roughly normal with a standard deviation of 1/√𝑁, so about 95% of them fall within:</p>
+  <div class="eq">± 1.96 / √N</div>
+  <p>A bar that sticks out of the band is called <b>significant</b>.</p>
+  <div class="card viz"><span class="tag">Visualizer · the band</span>
+    <div class="ctrl"><div><label for="b_n">Number of points N: <output id="b_no"></output></label><input id="b_n" type="range" min="24" max="400" step="1" value="131"></div></div>
+    <div class="kpi" id="b_kpi" aria-live="polite"></div>
+    <div class="ct" style="margin-top:10px">ACF of pure noise (simulated series a, N = 144), band ±0.163</div><div id="b_noise"></div>
+    <p class="sub" style="margin:6px 0 0">For pure noise we expect about 2 of 40 bars to cross by chance, and in this sample 1 did, so the band is doing its job. For the stationary Lanternly series (N = 131, band ±0.171), nine lags up to 24 cross the band: <b>1, 3, 4, 9, 12, 13, 16, 17 and 18</b>. By chance we would expect only about one. Of these, lags 1, 12 and 13 are by far the largest (0.46, 0.48 and 0.39 in size); the others are small bars that only just cross, which is weak evidence. The band printed by statsmodels is slightly wider for higher lags, because the uncertainty of an autocorrelation grows as the lag grows.</p>
+  </div>
+  <div class="callout"><b class="h">Important</b>Many bars will cross the band by luck in a long plot. With 95% bands, 1 bar in 20 crosses on pure noise. Focus on the bars that are far outside the band, and on bars at lags that make business sense, such as 1, 12 and 24 for monthly data.</div>
+  <h3>Finding the seasonal period</h3>
+  <p>If we do not know the period, we de-trend the series and look for the highest autocorrelation beyond the first lags. The lag of the strongest peak is the period.</p>
+<pre><code>d1 = acf(y.diff().dropna(), nlags=24)
+int(np.argmax(d1[2:]) + 2)        # lag of the strongest peak, starting from lag 2</code></pre>
+  <div class="card viz"><span class="tag">Visualizer · period finder</span>
+    <div class="btnrow" id="m_btns" role="group" aria-label="Series"><button data-k="lan" aria-pressed="true">Lanternly (monthly)</button><button data-k="day" aria-pressed="false">Daily series, weekly pattern</button><button data-k="my" aria-pressed="false">Mystery series</button></div>
+    <div id="m_chart"></div>
+    <p id="m_msg" class="sub" style="margin:6px 0 0" aria-live="polite"></p>
+  </div>
+  <p>On Lanternly the strongest peak is at lag 12 (0.81), so 𝑚 = 12, as we assumed from the calendar. On a simulated daily series with a weekly pattern the strongest peak is at lag 7, with 0.86 at both lag 7 and lag 14. The same two lines of code find a period that we did not know in advance. The mystery series is a monthly-like series from a business whose pattern repeats in a different cycle: after removing the slow drift of 0.2 per step with <code>diff(1)</code>, its strongest peak is at lag 6 (0.91), so it repeats every 6 steps. If the strongest peak had been at a lag larger than the cycle, we would still check that the multiples of the period (12 and 18 here) are also high.</p>
+  <details><summary>Your turn · find the period of a new series</summary><div class="dbody">
+<pre><code>rng3 = np.random.default_rng(11)
+t3 = np.arange(120)
+mystery = pd.Series(10 * np.sin(2 * np.pi * t3 / 6) + 0.2 * t3 + rng3.normal(0, 1, 120))
+
+# TODO 1: take the first difference of the series and drop the missing value
+# TODO 2: compute the ACF up to lag 24 and print the lag (from 2 onward) with the highest value</code></pre>
+    <p style="margin:0">Solution: <code>flat = mystery.diff().dropna(); my_acf = acf(flat, nlags=24)</code>, then <code>np.argmax(my_acf[2:]) + 2</code> gives lag 6 with value 0.91 (pick the "Mystery series" button above to see the bars).</p></div></details>
+</section>
+
+<section id="corr">
+  <div class="kicker">8 · The correlation trap</div>
+  <h2>Correlation vs causation: confounding and better features</h2>
+  <p>Lanternly also records <code>Complaints</code>, the number of late-delivery complaints per month. The customer-service manager has noticed that complaints and sales move together, and wonders whether complaints could be used to forecast sales. Look at the correlation first.</p>
+  <div class="card viz"><span class="tag">Visualizer · the shared shadow</span>
+    <div class="ctrl"><div><label for="c_v">View: <output id="c_vo"></output></label><input id="c_v" type="range" min="0" max="2" step="1" value="0"></div></div>
+    <div class="grid2"><div><div class="ct">Units</div><div id="c_u"></div></div><div><div class="ct">Complaints</div><div id="c_c"></div></div></div>
+    <div class="kpi" id="c_kpi" aria-live="polite"></div>
+    <p id="c_msg" class="sub" style="margin:6px 0 0"></p>
+  </div>
+  <p>On the raw series the correlation is 0.983, almost perfect. After a first difference it is still 0.856, and after we remove the trend and the season it is 0.094, close to zero. The strong link was made of two things the series have in common: both grow over the years (the size of the business) and both peak in the festive season (courier load). Complaints do not cause sales, and sales are not caused by complaints. Both are driven by a third factor. This is <b>confounding</b>.</p>
+  <div class="faq"><b>Even if complaints did help to predict sales, could we use them to forecast next November?</b><br>No. To forecast November we would need next November's complaints, which we do not have. A feature is only useful if its value is known at the time of the forecast. The test below gives complaints the future values as a favour, so they get the best case.</div>
+  <div class="card viz"><span class="tag">Visualizer · three regressions on 2023</span>
+    <div id="c_feat"></div>
+    <p class="sub" style="margin:6px 0 0">Three simple regressions of log(units), fitted on the training years (2012–2022) and scored on 2023. Complaints alone, even with the future values supplied, give a MAPE of 5.50%. Time and month of the year, both known in advance, give 4.52%. Adding complaints to those two does not help (4.66%). The features that come from understanding the cause (growth over time, and the festive season) are both better and available when we need them.</p>
+  </div>
+  <div class="callout"><b class="h">Important</b>Correlation is useful for prediction only when the variable is known in advance and the link is stable. Understanding the cause helps us choose better features: a good model for Lanternly uses time and the calendar, and leaves out complaints. The same logic applies to ice cream sales and drownings, which are both driven by temperature, or to cyclists and rain, where the cause runs in the opposite direction.</div>
+  <details><summary>Practice · Test a confounder with partial correlation</summary><div class="dbody">
+    <p>A more general tool than differencing is the <b>partial correlation</b>: the correlation between two variables after the effect of a third one is regressed out of both.</p>
+    <ol>
+      <li>Prompt an assistant: "Give me Python code that computes the partial correlation between two pandas Series a and b given a control z, by regressing a on z and b on z with numpy and correlating the residuals. Explain what it means when the partial correlation is near zero."</li>
+      <li><b>Verify, do not trust:</b> use a = log(Units), b = log(Complaints) and, as the control z, the 12 month dummies plus the time index. Compare with the raw correlation of 0.983 and with 0.094 above. In this notebook the partial correlation is about 0.56: much lower than 0.983, but not close to zero. Explain why a straight-line time index and month dummies do not remove everything, given that the level of the business wanders around a straight line and both series follow that wander.</li>
+      <li><b>Integrate:</b> add a cell that prints the three numbers (raw, partial, after differencing) side by side.</li>
+    </ol>
+    <p style="margin:0"><b>Reflect:</b> name one variable in your own work that correlates with the target but would not be available at forecast time.</p></div></details>
+  <div class="card quiz" data-q="3"></div>
+</section>
+
+<section id="ar">
+  <div class="kicker">9 · Using the memory</div>
+  <h2>Introduction to auto regression: regression on lags</h2>
+  <p>The stationary series has memory. The simplest way to use memory is the idea from the regression classes: make the past values the features and the current value the target. This is <b>auto regression</b>, AR(𝑝):</p>
+  <div class="eq">ŷ<sub>t</sub> = α<sub>0</sub> + α<sub>1</sub>·y<sub>t−1</sub> + α<sub>2</sub>·y<sub>t−2</sub> + ⋯ + α<sub>p</sub>·y<sub>t−p</sub></div>
+  <p>The number of lags 𝑝 is a hyperparameter, and the PACF is the tool for choosing it: use the lags up to the last significant partial autocorrelation.</p>
+  <div class="card viz"><span class="tag">Visualizer · the lag table</span>
+    <div class="sub">First rows of the table for p = 3 (the first three months have no complete history, so they are dropped).</div>
+    <div class="tw"><table id="r_lag"></table></div>
+    <p class="sub" style="margin:6px 0 0">Each row is one month: the target on the left and the three previous months on the right. After this reshaping, the problem is an ordinary regression table, with one condition: the series must be stationary, so that the features are not just a trend in disguise.</p>
+  </div>
+  <p>Train on 2012 to 2022 (the last 12 months stay unseen) and fit the model for 𝑝 = 1, once with <code>LinearRegression</code> and once with the dedicated <code>AutoReg</code> class:</p>
+  <div class="card viz"><span class="tag">Visualizer · regression = auto regression</span>
+    <div class="tw"><table><tr><th>Method</th><th class="num">Intercept</th><th class="num">Coefficient on y(t−1)</th><th class="num">R²</th></tr>
+    <tr><td>Linear regression</td><td class="num">−0.0003</td><td class="num">−0.462</td><td class="num">0.216</td></tr>
+    <tr><td>AutoReg (library)</td><td class="num">−0.0003</td><td class="num">−0.462</td><td class="num">–</td></tr>
+    <tr><td>PACF at lag 1, for comparison</td><td class="num">–</td><td class="num">−0.464</td><td class="num">–</td></tr></table></div>
+    <p class="sub" style="margin:6px 0 0">Auto regression really is linear regression on lags. The PACF at lag 1 is nearly the same number, because it is the slope of this kind of regression (the small gap is only the estimation method). The R² is 0.216: last month alone explains about 22% of the variation of what is left after removing trend and season.</p>
+  </div>
+  <p>How many lags are worth using? The PACF said two. Compare 𝑝 = 1, 2, 3 with the AIC from Class 4 (lower is better) and with a one-step-ahead score on the last 12 months, where the lags of the test months are real past values.</p>
+  <div class="card viz"><span class="tag">Visualizer · how many lags?</span>
+    <div class="btnrow" id="r_btns" role="group" aria-label="Number of lags"><button data-p="1" aria-pressed="false">p = 1</button><button data-p="2" aria-pressed="true">p = 2</button><button data-p="3" aria-pressed="false">p = 3</button></div>
+    <div class="tw"><table id="r_tab"></table></div>
+    <div class="ct" style="margin-top:10px">One-step-ahead error on 2023 (MAE, log-change units)</div><div id="r_mae"></div>
+    <div class="ct" style="margin-top:10px">AR(2) one-step prediction vs actual, 2023 (change in log units)</div><div id="r_chart"></div><div id="r_lg"></div>
+    <p class="sub" style="margin:6px 0 0">Going from one lag to two raises the training R² from 0.216 to 0.354 and lowers the AIC from −318.7 to −336.5. Going to three lags does nothing (R² of 0.343, a worse AIC of −330.8, and a third coefficient of 0.011). That agrees with the PACF, where lag 3 was 0.003: the PACF picks the number of lags, and the AIC confirms it. On the unseen 2023 months, two lags cut the error by about 24% compared with no memory (0.0353 vs 0.0467), and the third lag adds nothing.</p>
+  </div>
+  <div class="callout"><b class="h">Important</b>The regression above works on the stationary series, so its forecasts are <b>changes, not units</b>. To forecast units we must undo the differencing and the log, step by step, which is the job of the ARIMA family. In the next class we add a second kind of memory (past errors), combine both, and let the model do the differencing for us.</div>
+  <div class="card quiz" data-q="4"></div>
+</section>
+
+<section id="recap">
+  <div class="kicker">Recap</div>
+  <h2>Key takeaways</h2>
+  <ul>
+    <li>A <b>stationary</b> series has a constant mean, a constant variance, and autocovariances that depend only on the lag. Trend, seasonality and a growing spread each break this.</li>
+    <li>The <b>ADF test</b> has the null hypothesis of a unit root. A p-value below 0.05 means stationary. It does not detect seasonality or a changing spread, so always look at the plot as well.</li>
+    <li><b>Differencing</b> removes structure: <code>diff(1)</code> removes a trend and <code>diff(m)</code> removes a seasonal cycle. Take the logarithm first when the swing grows with the level. Use the minimum number of differences.</li>
+    <li>The <b>ACF</b> gives the correlation with each lag and is the tool for finding the seasonal period. The <b>PACF</b> removes the indirect links and is the tool for choosing the number of past values. The band is ±1.96/√N.</li>
+    <li><b>Correlation is not causation.</b> Series that share a trend or a season correlate strongly, and the link disappears once those are removed. Prefer features that are caused by something real and known in advance.</li>
+    <li><b>Auto regression</b> is linear regression on past values, AR(𝑝), and the PACF picks 𝑝.</li>
+  </ul>
+  <h3>Common mistakes</h3>
+  <div class="grid2">
+    <div class="mini">Calling a series stationary because the ADF p-value is small, without looking at seasonality and spread.</div>
+    <div class="mini">Differencing more than needed, which creates a false negative correlation.</div>
+    <div class="mini">Computing the ACF of a series with a trend and reading the slow decay as memory.</div>
+    <div class="mini">Treating every bar that crosses the band as meaningful.</div>
+    <div class="mini">Using a correlated variable that will not be known at forecast time.</div>
+    <div class="mini">Fitting an AR model on a non-stationary series.</div>
+  </div>
+  <div class="callout" style="margin-top:22px"><b class="h">Closing the Lanternly story</b>The manager's question has an answer. Lanternly's units are not stationary: they have a trend, and a yearly cycle with a swing that grows with the size of the business. After a log, one ordinary difference and one seasonal difference (12 months), the series passes the ADF test with a steady spread. What is left is not empty: it carries a negative memory at lags 1 and 2 and a yearly memory at lags 12 and 13, which a regression on past values can already use. The complaints series looked like a great predictor and was only a shadow of the same growth and festive season, so Lanternly will forecast with time and the calendar. That closes the story. In Class 6 we continue with the ARIMA family: moving averages of past errors, the combination with auto regression, and models that do the differencing for us.</div>
+</section>
+</main>
+
+<footer>Time Series &amp; Recommender System: Class 5 (Post-Read)</footer>
+
+<script>
+(function(){
+"use strict";
+const D={"sims": {"a": [0.2677, -0.8129, -0.4154, -0.6121, -0.1408, 1.066, 0.157, -0.1586, -1.0357, -1.6747, -0.4863, -0.0538, 1.7679, 0.1303, 0.9827, -0.4993, -1.1849, -0.9651, -0.7252, 2.1285, -0.8214, 0.8385, -0.9029, 0.9316, 0.385, -0.1566, -0.0408, -0.6548, 0.4461, -0.455, -1.2256, -1.2779, 0.1726, 1.5791, 0.16, -0.1186, 0.2858, 1.306, 0.2194, -0.4109, 1.1063, 0.4288, 1.5358, 0.1832, -1.2245, -1.3682, 1.6509, 1.7237, -0.1795, -0.3832, 1.4614, -1.107, -0.8947, 0.6433, -0.3946, -0.0051, -0.1634, 0.3376, 1.4075, 0.0906, 0.6439, -2.0502, -0.0487, -0.8432, -1.2188, -0.8782, -0.3341, 0.9159, -1.3264, 0.0306, -0.4842, -0.3277, 1.0028, 0.5381, 1.3374, -0.1545, -0.6959, -0.2239, 0.2425, 0.1766, -1.0844, 0.0905, 0.2282, 2.5175, 1.8768, -0.8532, -0.2874, -1.4634, -0.5907, 0.3156, 1.2059, -0.7291, -0.6541, -2.1473, -0.1627, -1.0624, -0.5294, -0.8769, -0.0943, -1.7577, -1.467, 2.1292, -1.2874, -1.0968, 1.8369, 2.9051, -1.1716, -0.3682, 0.3416, 1.7287, -0.9869, -0.2453, 0.7773, 0.4348, -0.3762, -0.1338, -1.3749, -0.2382, -0.2664, 0.2322, -0.5553, 0.4715, 1.0127, 0.1554, 0.3518, 0.0532, 0.0001, -0.7216, 0.3165, -0.0973, 2.0932, 1.5734, 0.3858, -0.7631, -1.1124, 1.1911, 0.2627, 0.4801, -1.7446, 0.9274, 0.4544, -1.1104, -0.4715, 0.2637], "b": [0.0525, -0.2422, -0.0035, -0.102, 0.3526, 1.7215, -2.2667, 0.1131, 0.5765, 0.746, 0.1281, -1.2067, 0.928, 2.3774, -0.8339, 1.6138, 0.4715, 0.7887, -0.1529, 0.6155, 2.3, 1.6327, 2.8323, 2.3274, 1.6391, 2.9939, 1.739, 2.178, 1.1034, 1.5165, 0.8026, 2.5396, 0.4217, 2.4324, 1.5093, 2.9212, 2.5509, 3.6706, 2.6308, 0.378, 1.933, 0.878, 1.5817, 3.6612, 2.8375, 1.5511, 1.2863, 2.3828, 1.1834, 1.7789, 2.812, 3.7053, 3.2088, 0.3587, 3.0044, 2.822, 3.2139, 4.4662, 0.8368, 2.3589, 3.5909, 1.4684, 4.5759, 3.5184, 4.0466, 2.6791, 4.1138, 4.4185, 3.6329, 3.6844, 3.7703, 2.6867, 3.4525, 3.4975, 4.0834, 4.7498, 2.7415, 3.725, 5.3815, 3.2064, 3.1777, 4.2523, 4.9444, 4.1614, 5.529, 5.1068, 5.1418, 4.9041, 6.7277, 4.2448, 2.4965, 6.1543, 4.1423, 4.7579, 6.0096, 3.1477, 3.5484, 3.2487, 4.1059, 5.3896, 5.5242, 5.3263, 3.6872, 2.8399, 5.2544, 4.7782, 5.7594, 6.052, 5.5382, 6.2101, 5.7292, 6.0801, 4.8953, 5.4704, 5.8968, 6.5705, 5.4063, 6.3712, 5.6342, 5.8325, 6.8295, 4.0569, 4.8035, 4.6678, 3.8664, 5.5717, 7.0494, 6.0651, 6.5978, 7.5392, 7.8277, 6.4809, 7.9536, 6.7421, 5.8626, 6.1556, 5.3195, 5.9619, 6.542, 7.7536, 8.7208, 5.6678, 7.4928, 6.1095], "c": [0.2373, 0.9345, 0.8166, 2.4641, 1.4296, 0.733, -0.5349, -1.3271, -1.5181, -2.0946, -1.5677, -0.819, 0.6603, 0.8286, 0.9936, 2.5336, 1.5663, 1.5573, 0.1917, -1.0656, -1.5577, -1.0245, -0.6936, -0.9653, 0.0801, 1.5381, 1.3092, 2.1665, 1.7191, 1.157, -0.4167, -1.7948, -2.7685, -2.5587, -1.9614, -1.1466, 0.9686, 1.553, 1.251, 2.1739, 1.5285, 0.8578, 0.0927, -0.6904, -1.9017, -1.4681, -2.303, -0.9968, 1.2988, 1.1115, 2.4487, 2.0458, 2.0224, 0.9716, -0.0852, -1.3897, -1.5169, -2.4258, -1.3993, -0.4574, 0.1833, 0.8569, 1.959, 1.8457, 2.1998, 0.0843, -0.1678, -1.9954, -2.4796, -1.3181, -1.2845, -1.3597, -0.7513, -0.4823, 1.4603, 3.2102, 1.9495, 0.7202, 0.2325, -1.7805, -1.8807, -1.9503, -1.7751, -0.6046, 0.1723, 1.3342, 1.3879, 2.4489, 2.5465, 0.5149, -0.4438, -0.3321, -1.8277, -1.2981, -1.9533, -0.2725, 0.0657, 1.1291, 2.5144, 1.8191, 1.2615, 0.7757, 0.2262, -1.7829, -1.4133, -2.2694, -1.1581, -2.1971, -0.3933, 0.1568, 1.3189, 2.1238, 1.6424, 0.8733, -0.0796, -0.8983, -2.2363, -1.6466, -1.4007, -0.8075, 0.2783, 1.1482, 2.7496, 1.9565, 1.5785, 0.6232, -0.5161, -1.6222, -2.1764, -2.0353, -1.5649, -0.9744, -0.3828, 1.4501, 2.1018, 1.9202, 1.4056, 1.2742, 0.094, -1.7241, -1.766, -1.869, -2.1819, -0.9051], "d": [-1.4548, -0.1186, 1.1293, 0.8768, 1.2403, -1.1697, -2.326, -2.6198, -3.6919, -2.9775, -0.9802, -2.1569, -2.9943, -2.7589, -1.1478, -2.3701, -2.1211, -0.2998, -1.9516, -3.2326, -3.6562, -4.1768, -3.3642, -3.1226, -4.8975, -4.3821, -4.9596, -3.6852, -4.3128, -4.9494, -4.4083, -3.6453, -3.1972, -4.8828, -4.3448, -5.3791, -5.1438, -6.5676, -6.1212, -6.9278, -8.2105, -7.4967, -7.255, -7.869, -6.4178, -6.8585, -6.8264, -6.5574, -7.1771, -6.706, -7.2394, -7.6511, -6.2884, -7.329, -9.7418, -8.1309, -5.5815, -5.9868, -7.9236, -8.2341, -8.5203, -8.7103, -9.8237, -9.2441, -8.7196, -10.214, -9.5148, -7.4621, -7.2901, -7.6275, -7.7695, -7.1542, -8.8849, -8.7205, -9.111, -7.2631, -7.4373, -5.7694, -6.8732, -6.2859, -5.9665, -6.8356, -6.6582, -5.4456, -5.7694, -7.4614, -7.479, -8.3814, -8.7237, -8.8053, -10.511, -12.1266, -11.6446, -12.1673, -14.732, -13.9472, -13.6748, -14.3887, -15.7055, -14.8697, -14.5203, -12.1377, -11.7176, -11.3299, -11.4968, -10.68, -10.0549, -8.8032, -9.3245, -9.7599, -10.239, -9.4482, -7.9499, -8.4087, -8.8335, -8.5194, -8.7651, -7.8131, -10.0649, -10.8916, -11.674, -13.9944, -14.958, -15.8731, -16.0743, -14.9613, -15.2063, -16.2372, -16.2941, -15.2449, -16.2209, -17.1315, -16.5729, -16.7945, -16.147, -16.1606, -15.459, -16.494, -16.5061, -16.7168, -17.9327, -19.4962, -18.8104, -19.1614], "e": [-0.2045, -0.0221, 0.2933, -0.6614, -0.4789, -0.323, 0.5552, 0.1159, 0.3376, -0.5359, -0.5598, 0.2373, 0.0326, 0.3238, -0.1164, 0.1808, 0.1075, 0.5522, 0.5972, -1.2473, -1.7978, 0.8314, 1.0214, -0.9084, -1.711, 0.0941, 0.9122, 1.8156, 0.5369, -0.3977, -0.9824, 0.0129, -0.3471, -1.2079, 2.4995, 2.2315, 1.4541, -1.2063, 1.1457, 0.8763, 0.6196, 1.787, 0.9276, 1.1026, 0.9681, 0.5282, -2.8181, 0.1346, -0.9122, -2.1373, 2.8591, 2.9912, 2.3922, 0.4568, 2.4581, 0.0223, 0.3813, -2.0885, 0.7702, 0.119, -2.6053, -0.1039, -0.1642, 3.7569, 1.8957, 0.0246, 0.5424, 0.0977, -0.4545, -2.4571, -0.3474, -1.7384, -2.9507, 1.2218, 0.9469, -4.3774, -0.3043, 2.4992, 2.6904, 2.6364, 0.1012, -2.2225, -2.8826, 0.927, 1.0316, 3.5402, 3.0579, -0.3716, -3.5335, -0.9158, 0.63, -0.5921, -1.7106, 0.7561, -1.522, -1.9156, 0.9593, -1.2502, 0.7665, 0.8661, -3.6462, -1.5544, 4.6872, -3.8232, -7.0273, -6.2372, 0.0984, 0.1054, -0.4046, 4.2132, -9.3549, 1.3976, 5.5587, -4.0487, -1.3749, -2.7481, -3.2912, -1.2104, 5.3388, 6.9269, -1.2766, 7.2964, 0.1373, 6.8219, -0.3657, 0.5177, 1.4546, 12.7472, 3.4392, -2.8786, 3.9729, -1.4944, -2.0374, 3.807, 0.1312, 1.1839, 0.0599, 1.4507, 1.8444, -8.4645, 2.9329, -4.3503, -6.4327, -0.2623], "f": [0.0, 0.3047, -0.8267, 0.1718, 1.0608, -1.2085, -2.1481, -1.3758, -1.2793, -0.9123, -1.4917, -0.1648, 0.6624, 0.5297, 1.4981, 1.5162, 0.202, 0.5102, -0.6018, 0.4572, 0.2701, 0.0042, -0.678, 0.748, 0.369, -0.17, -0.4711, 0.2025, 0.5072, 0.7678, 0.9683, 2.8194, 1.5672, 0.5848, -0.4044, 0.3329, 1.362, 0.8394, -0.2525, -1.0013, -0.0503, 0.7081, 1.0388, 0.0616, 0.2753, 0.3094, 0.4353, 1.1761, 1.0469, 1.4117, 1.0558, 1.0282, 1.351, -0.5114, -0.6777, -0.9448, -1.3002, -1.1853, 0.6652, -0.4002, 0.6882, -1.2012, -1.1757, -0.6602, 0.1241, 0.7981, 1.352, 0.5977, -0.044, 0.8272, 0.3877, -1.0043, -1.8363, -2.2048, -1.0462, -0.5899, 0.2775, -0.233, -0.0045, 0.6224, 0.1263, 0.5452, -0.2803, -0.5592, -0.7732, -1.7371, -0.729, -0.9797, -0.6733, 0.0094, 0.4531, 0.9826, 0.5893, -0.0108, -0.0873, -1.7484, -2.671, -3.1924, -3.2319, -1.8626, -2.2093, -1.9247, -0.048, -0.3899, 0.4646, -0.6084, -0.6313, -1.3919, -1.3134, -0.0791, -1.7827, -0.8134, -0.3317, -0.8263, -2.0245, -1.345, -1.471, -0.797, -0.5361, 1.2265, 0.6192, -0.59, -0.2338, 0.0564, 1.3986, 1.8142, 1.6268, 2.6021, 0.6327, -0.1969, -1.0644, -1.1349, -2.1711, -0.8846, -0.8415, -2.0598, -2.4575, -1.4067, -0.1466, 1.8941, 4.2398, 3.3822, 1.378, -1.1674]}, "simtab": {"a": [-0.04274322032909325, 0.013257822147034946, 0.9234140618959085, 1.0554486245038788, 1.007903405779278, 1.9279345587095976e-15], "b": [1.8589372919168865, 5.312809076593971, 1.469082427801573, 1.3623500464907825, 0.8245749613824782, 0.7906888741559889], "c": [0.018275456178100384, -0.040126381944118404, 1.5075077962312102, 1.5376506924805802, 4.145941384068394, 0.006849186460141401], "d": [-5.149735366674662, -11.896087762950366, 2.8619437506781873, 3.913595426893925, 0.9913532663895506, 0.8286819908700271], "e": [0.18146346791728168, 0.026687824453587528, 1.318303050643633, 3.7144153961019213, 3.070768565120763, 8.292966852342673e-20], "f": [0.15906594972899887, -0.449842130333856, 0.9271374059317408, 1.4007101125948402, 1.168240132884494, 6.089618436341848e-07]}, "cand": [["raw units", 144, 0.9959706665948205, 357.16539106975944, 677.3721513847695], ["diff(1)", 143, 0.034235413015764604, 197.68059231501252, 425.013841555995], ["diff(12)", 132, 0.43794349112171116, 92.117560469264, 149.00901372136104], ["diff(1).diff(12)", 131, 0.005032445967914458, 92.79489842528449, 164.13639107731876], ["log, diff(1).diff(12)", 131, 0.0017992923791196132, 0.06731691408888495, 0.06350272393946894]], "stat": [0.0873428977058035, 0.06010928871553123, -0.1042058631363707, 0.09730870343662534, -0.04836337913457278, -0.027477636037720465, 0.10224328661041326, -0.04342745763168132, 0.056161412201043426, -0.024675552082235264, 0.07190961208393087, 0.03436212943094219, -0.09345838036907228, 0.0021996805164281596, 0.06320772146599918, -0.07463512779742842, 0.013866910056992587, -0.0030486593316512156, 0.003449487715666777, 0.02843503427362215, -0.13742946386281574, 0.08501736491466616, -0.08049065446872916, 0.05208976183299452, 0.005202198434189675, -0.016441610308376653, 0.0034685224939501325, -0.09746081881176405, 0.07574662809838184, -0.06274020440810535, 0.052239064845894134, 0.00551821802743202, 0.04044791340248022, -0.11565096968425603, 0.020880847926918022, -0.017284313260741868, -0.043366993605395976, -0.031198677253990503, 0.07587832858491961, 0.11047439743743848, -0.07606355747794424, -0.0702776289363145, 0.05041169017071745, -0.08118334883747114, 0.026478125267826336, 0.08133277142495121, -0.12151382185910276, 0.022935051166626863, 0.09386338302667241, -0.08139181904311332, 0.06990187579082363, -0.0741164876204703, 0.036771197036620684, 0.05319594504121028, -0.028571712214169764, 0.013040634842567123, -0.023468428480363457, -0.014853315010511459, 0.1305161800843937, -0.08706413229461951, -0.017829399392360834, 0.06722727627446279, -0.08929491020149527, 0.059236696541586475, -0.08965371576075576, 0.09776474506564004, 0.011786922740832928, -0.09012684124147707, 0.01349180339167333, 0.010086130387388259, 0.019468722425874496, 0.01303438164267412, 0.02570676884730272, -0.010329508512184837, -0.027256788296817547, -0.025250673614824137, 0.14137990943116296, -0.12659645615749326, -0.11870211701645683, 0.22253759047269117, -0.049099985242039956, -0.014778273747482196, 0.03500991734607872, -0.07403548191965026, -0.024079344031222583, -0.0030527821743335792, 0.03582580203059216, 0.054577011283816645, -0.049643582712880274, 0.08425320817213056, -0.0006046747874419722, -0.174580457886365, 0.13818149918592582, -0.04248108065114753, -0.023947682838286966, 0.11239329565144285, -0.03612347373870062, 0.03337244036681053, -0.04588129005851904, -0.04086703504896505, -0.056010905541371336, 0.03516788282350536, 0.0733863272746067, 0.05824159837898524, -0.11249094107461932, 0.05504282295971663, -0.061090926853759164, -0.015826108566075803, 0.038869611724351216, -0.1331361401105715, 0.029718293748341118, -0.005064761683397201, 0.0036234931177894225, 0.024313394161436186, 0.03102741853384927, -0.049408386588421394, 0.050020866934274544, -0.00405944102460154, 0.03964843744396873, -0.048561893512786725, 0.031007801319845818, 0.07584275078918612, -0.04218701046612505, 0.012812965909373197, 0.02052345435821845, -0.031186328210999648, -0.030612918394928634, 0.0770188721286047, 0.010690371122546338, -0.12372066600164722, 0.05607074346005625], "statidx": ["2013-02", "2013-03", "2013-04", "2013-05", "2013-06", "2013-07", "2013-08", "2013-09", "2013-10", "2013-11", "2013-12", "2014-01", "2014-02", "2014-03", "2014-04", "2014-05", "2014-06", "2014-07", "2014-08", "2014-09", "2014-10", "2014-11", "2014-12", "2015-01", "2015-02", "2015-03", "2015-04", "2015-05", "2015-06", "2015-07", "2015-08", "2015-09", "2015-10", "2015-11", "2015-12", "2016-01", "2016-02", "2016-03", "2016-04", "2016-05", "2016-06", "2016-07", "2016-08", "2016-09", "2016-10", "2016-11", "2016-12", "2017-01", "2017-02", "2017-03", "2017-04", "2017-05", "2017-06", "2017-07", "2017-08", "2017-09", "2017-10", "2017-11", "2017-12", "2018-01", "2018-02", "2018-03", "2018-04", "2018-05", "2018-06", "2018-07", "2018-08", "2018-09", "2018-10", "2018-11", "2018-12", "2019-01", "2019-02", "2019-03", "2019-04", "2019-05", "2019-06", "2019-07", "2019-08", "2019-09", "2019-10", "2019-11", "2019-12", "2020-01", "2020-02", "2020-03", "2020-04", "2020-05", "2020-06", "2020-07", "2020-08", "2020-09", "2020-10", "2020-11", "2020-12", "2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12", "2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12", "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12"], "diff1": [null, -17.0, 36.0, 39.0, 35.0, -3.0, 83.0, -64.0, 174.0, 215.0, 128.0, -231.0, -361.0, 43.0, 89.0, -38.0, 122.0, -46.0, 70.0, 20.0, 167.0, 335.0, 122.0, -188.0, -445.0, -30.0, 113.0, 16.0, 76.0, -42.0, 84.0, 29.0, 249.0, 192.0, 293.0, -360.0, -445.0, -30.0, 115.0, 23.0, -32.0, 45.0, 16.0, 100.0, 293.0, 297.0, 100.0, -348.0, -504.0, -81.0, 80.0, 118.0, 114.0, -54.0, -76.0, 175.0, 179.0, 349.0, 280.0, -603.0, -470.0, 28.0, -14.0, 217.0, 14.0, -3.0, -6.0, 149.0, 217.0, 332.0, 264.0, -391.0, -685.0, 7.0, 76.0, 110.0, 108.0, -142.0, 145.0, 190.0, 71.0, 378.0, 306.0, -377.0, -730.0, 46.0, 70.0, 78.0, 74.0, 88.0, -59.0, -14.0, 520.0, 324.0, 307.0, -337.0, -974.0, 11.0, 69.0, 146.0, 187.0, 0.0, 105.0, -18.0, 188.0, 710.0, 215.0, -439.0, -847.0, -55.0, 146.0, 78.0, 123.0, -120.0, 188.0, 152.0, 377.0, 484.0, 436.0, -701.0, -960.0, 20.0, -116.0, 138.0, 113.0, -113.0, 246.0, 236.0, 258.0, 662.0, 449.0, -615.0, -1169.0, 90.0, 42.0, 60.0, 159.0, -79.0, 202.0, 178.0, 530.0, 825.0, -13.0, -445.0], "roll": {"mean": [null, null, null, null, null, null, null, null, null, null, null, 844.9166666666666, 847.75, 855.5833333333334, 867.8333333333334, 873.6666666666666, 886.75, 896.25, 904.6666666666666, 920.0833333333334, 934.9166666666666, 959.75, 984.0833333333334, 1012.0, 1032.9166666666667, 1047.75, 1064.5833333333333, 1085.9166666666667, 1103.4166666666667, 1121.25, 1140.25, 1160.0, 1186.5833333333333, 1201.25, 1230.1666666666667, 1244.75, 1259.3333333333333, 1273.9166666666667, 1288.6666666666667, 1304.0, 1310.3333333333333, 1323.9166666666667, 1331.8333333333333, 1345.6666666666667, 1363.1666666666667, 1389.4166666666667, 1399.5833333333333, 1410.75, 1417.0, 1419.0, 1418.0833333333333, 1425.0833333333333, 1444.25, 1455.1666666666667, 1458.4166666666667, 1467.9166666666667, 1467.9166666666667, 1472.25, 1491.5833333333333, 1489.6666666666667, 1490.5833333333333, 1500.5833333333333, 1502.75, 1513.1666666666667, 1515.25, 1521.5833333333333, 1533.75, 1543.75, 1556.9166666666667, 1568.6666666666667, 1579.0833333333333, 1607.1666666666667, 1617.3333333333333, 1625.75, 1641.6666666666667, 1648.6666666666667, 1663.5, 1666.75, 1682.5833333333333, 1701.8333333333333, 1708.9166666666667, 1719.8333333333333, 1734.25, 1749.8333333333333, 1761.6666666666667, 1776.75, 1791.3333333333333, 1803.25, 1812.3333333333333, 1840.5833333333333, 1851.8333333333333, 1846.0833333333333, 1877.75, 1904.9166666666667, 1932.1666666666667, 1962.75, 1973.0, 1980.3333333333333, 1987.5833333333333, 2000.5, 2022.8333333333333, 2037.8333333333333, 2066.5, 2094.8333333333335, 2095.5, 2128.3333333333335, 2153.5, 2170.1666666666665, 2197.4166666666665, 2219.1666666666665, 2247.3333333333335, 2269.8333333333335, 2287.0, 2294.1666666666665, 2308.25, 2336.5, 2380.5, 2405.6666666666665, 2449.25, 2471.0, 2483.3333333333335, 2501.9166666666665, 2498.6666666666665, 2500.4166666666665, 2501.3333333333335, 2502.8333333333335, 2509.1666666666665, 2522.5, 2525.9166666666665, 2544.1666666666665, 2563.5, 2590.0, 2599.0833333333335, 2614.0, 2642.0833333333335, 2663.6666666666665, 2689.0833333333335, 2717.3333333333335, 2741.9166666666665, 2761.6666666666665, 2804.0833333333335, 2860.0833333333335, 2877.5833333333335, 2909.25], "std": [null, null, null, null, null, null, null, null, null, null, null, 210.4806008479958, 207.84527680683314, 200.70578119740497, 192.67439955122276, 188.44161542568673, 184.01883549838539, 178.67549305425695, 177.33652309730905, 171.56417210919992, 180.34686696541874, 226.9906385734884, 274.7238144799688, 297.65171837996417, 280.9333335131094, 267.760450946194, 258.1107790124704, 242.46628944072123, 235.3814924111432, 222.60977884262797, 213.8963746558347, 204.98514358584433, 218.43761677935092, 242.13562127640213, 303.0930950094779, 314.9869044896949, 303.22428942446203, 288.53878212101574, 278.6784831480486, 268.3220588634627, 264.2179999832558, 254.70177153730737, 250.34551880926307, 245.85965447175352, 259.5768701466906, 300.8824773088582, 321.63826613514857, 329.78536408342444, 324.25242692019566, 322.058153980698, 322.76545335396156, 318.94355680001263, 310.12435189188886, 304.2232533498851, 302.00916853431517, 300.0065024547835, 300.0065024547835, 307.69084986542845, 350.74685466958454, 349.62508057875016, 348.76990548167646, 338.27166552487114, 336.1431310401198, 331.29218999474733, 330.7105641988594, 328.24837002526465, 321.3972690385766, 320.8282250675596, 328.33642899632883, 347.22362019920695, 371.22192782346576, 390.7130621948769, 380.52435911356406, 372.0809112887348, 356.48443376275543, 352.7121755594491, 346.9261121229248, 344.8080164117695, 337.38094420869777, 337.7101590345669, 340.8106534648712, 357.2607485076459, 389.0583328546472, 404.29193622550866, 392.4397656927376, 377.3614435669206, 364.7326127286672, 357.0312247612898, 353.3124636489607, 337.34160143778195, 331.62844305400813, 332.9584899962867, 354.28009591795825, 396.4167821264843, 453.2993859838493, 483.7103049252833, 473.3027092099263, 466.05234456956595, 459.84294914545495, 451.7574771731175, 443.66732691251735, 439.0949024223977, 430.3061278164248, 418.16304635074465, 418.4635315923348, 472.5769457950435, 522.5191601532662, 539.5078284600687, 514.9069568790329, 492.1570025423972, 466.4990175052198, 449.69683390507043, 442.2043953566376, 437.7516592218896, 433.7070911445801, 428.7850701267928, 448.2149443778494, 491.4517146971716, 582.7241862774614, 599.9131755361108, 588.7716540443017, 570.4039172269779, 573.6133213448279, 572.2503359279916, 571.7391861414602, 570.5642874038019, 568.1737623671359, 567.8451293346569, 569.7866360367387, 599.0317692794456, 642.590991080784, 669.0936882353367, 661.9312595913904, 651.073519099594, 627.2736764375796, 611.2137452841229, 596.9910092719297, 574.2192063747947, 563.130932350283, 561.2034687467063, 586.4139801033124, 683.3068601671705, 715.733629772893, 745.6872516495969]}, "acf": [1.0, -0.45494559385019206, -0.11086433084930676, 0.2557181826205086, -0.2603167762786282, 0.11969574582092947, -0.051004785966535245, 0.04070365676023143, 0.11522723612032815, -0.1907514424015774, 0.16890155421148476, 0.10839320980219223, -0.4804079153498424, 0.38464830611970474, -0.0995815270577271, -0.0978421039722694, 0.2378033159541708, -0.24575758095861738, 0.17559831208633647, -0.08989545659521005, -0.08092923240427297, 0.12535314488992244, -0.04258483838633437, -0.03845116399236021, 0.13048942630369853, -0.1901628010112751, 0.12836786927923632, -0.011028082026779218, -0.12506645113212658, 0.2314496879764369, -0.32713236002859203, 0.23514017695735995, 0.0792213649866389, -0.2695216023284086, 0.19067385654520327, -0.009666991132016153, -0.17749778192065566], "pacf": [1.0, -0.45844517534134727, -0.40863976436923594, 0.002535553407253549, -0.21953127618458096, -0.055765473034000076, -0.18873698118201332, 0.01309235772258863, 0.13855931725753265, -0.014921840799533712, 0.12632439923373154, 0.3649310545869202, -0.333981767690257, 0.019310496180397436, -0.16568756471775062, -0.01722732617389339, 0.010810638189905736, -0.1491069622263577, 0.009901514464782091, -0.012729467585723348, -0.05772838362926606, -0.1401914323234767, 0.21336093842410148, 0.020428074806488797, -0.03523380702030041], "acf_raw": [1.0, 0.8885981937603822, 0.70691942288385, 0.5650542627941618, 0.4965575189471701, 0.47931009349839354, 0.46665108998435556, 0.4506653844016883, 0.4359355055700172, 0.4669865204299557, 0.5665628373534974, 0.7012249617475675, 0.7691475101437627, 0.6727929612888445, 0.5063428766449175, 0.3854290870197865, 0.3291681674629632, 0.3123098942319063, 0.30055185434919807, 0.28466551633783727, 0.2709733524258165, 0.29817142909687305, 0.38924467326239337, 0.5113528851982683, 0.572965147276192, 0.48927736942130157, 0.34378880157806907, 0.23604616959876643, 0.18679116138426582, 0.17575540176997326, 0.16201606655474785, 0.14557950968095468, 0.12866904905808338, 0.1473754207830218, 0.22346276958489253, 0.3328902651336142, 0.3852340270453942], "pacf_raw": [1.0, 0.8948121671433217, -0.42051217431745164, 0.25685264309966305, 0.13420479095612953, 0.07622888083779505, -0.022382797288916727, 0.11684634606393086, 0.04846865176264815, 0.34463856858170266, 0.37202590517855266, 0.3822786537836495, -0.07342437273615594, -0.6798031754290823, -0.11972700632313622, 0.2901221821255633, -0.012629567133104844, -0.18432536127550317, -0.018677830969105986, 0.12744196313456832, 0.09061745309290466, 0.057851238778525944, 0.0229857010942625, 0.031877509915149774, 0.0017545907346534202], "acf_d1": [1.0, 0.3625821128781799, -0.24908891133952527, -0.33621055266887223, -0.24112441035324186, -0.006612195458474606, 0.05293145747388175, -0.027074507309851767, -0.24717658887532534, -0.39707295602680115, -0.20103258120422257, 0.40160183944820993, 0.8113135250699701, 0.3426564550849277, -0.21419026394743204, -0.3113771937347076, -0.19905484495042886, -0.004943047114759507, 0.06324012526170689, -0.03029793267267514, -0.22386861926494317, -0.347030523420703, -0.19846241478067866, 0.35725544965045886, 0.7175274844584671, 0.27380686761084416, -0.16588997455140675, -0.2939232689307507, -0.17871802936354825, 0.03162053871370053, 0.04744855925027472, -0.01415058818839586, -0.18313903798536832, -0.3275519774283464, -0.16123931468495029, 0.31163137886425296, 0.61400918316128], "feat": {"c": 5.496590757984517, "tm": 4.5183009163697, "tmc": 4.66325261225214}, "corr3": [0.9833667993046039, 0.8556803464606361, 0.09350756424538981], "partial": 0.564422050415966, "ar": [[1, 0.21560191885999147, -318.6982794582584, [-0.462], 0.0387010004082836, -0.0002853980323735474], [2, 0.3541984360077408, -336.4676551621323, [-0.663, -0.396], 0.035258967870303755, -0.001233843407290621], [3, 0.34312260788790006, -330.81562042294274, [-0.652, -0.381, 0.011], 0.03520152198678036, -0.0009617706896760134]], "ar2pred": [-0.02591301158612019, 0.015256234256187764, -0.0025542461236130773, -0.06380234351562403, -0.0033089901440008394, 0.006983675392740514, -0.019917053201230387, 0.011312531146062949, 0.03141751457556106, -0.04017068333517366, -0.03883319240660568, 0.07655923377566047], "ar2act": [-0.048561893512786725, 0.031007801319845818, 0.07584275078918612, -0.04218701046612505, 0.012812965909373197, 0.02052345435821845, -0.031186328210999648, -0.030612918394928634, 0.0770188721286047, 0.010690371122546338, -0.12372066600164722, 0.05607074346005625], "base": 0.046686314639526515, "my_acf": [1.0, 0.45621065772939806, -0.4747265330156469, -0.9307842631638706, -0.46224950372439455, 0.45159910855790797, 0.908000603134848, 0.4598714570906506, -0.4478733850782136, -0.8718850495825128, -0.45705455049318117, 0.42776905879783483, 0.8587589400016602, 0.4377374644526453, -0.411223282379506, -0.8377218065365976, -0.42867579258656413, 0.4033830516171309, 0.8202407614334336, 0.40514638300291317, -0.38648172967327027, -0.7930554796891386, -0.398223089217384, 0.3794737869328702, 0.7710935443623058], "my_raw": [0.03419276725318417, 10.220001578154346, 10.28497511643032, 0.0896929232123338, -8.158223548950831, -8.18763823087781, 1.7697263575719577, 10.004189598798767, 11.007139654100934, -0.047324798974105686, -5.093705263144867, -6.556686198000011, 3.0803784532741414, 11.123687703867558, 11.08115547076954, 3.463110158597611, -4.635740510314264, -5.462783908537835, 3.4472138214297954, 13.145952648653635, 11.789913395897214, 2.6856164962686133, -3.865272175094846, -4.730819861532282, 2.8796594098819623, 12.846200373899034, 13.392656478951638, 4.20679752256775, -4.5527179219074085, -2.82361621089958, 6.8972492567277, 14.627121959883917, 14.31665800833556, 6.984993808747887, -1.1430182306500063, -1.9602646363328664, 7.744667807920878, 17.103129514427327, 16.053297601636086, 6.98648445801848, -0.31260343932888135, -0.212708296881576, 9.49881276841439, 15.975673259039024, 16.79864110748886, 8.161833039284307, -1.194268884077204, 0.8661805173526057, 10.127804212495505, 17.721464006368567, 20.045901112340534, 11.021924336660494, 2.3671224409911464, 2.3414530535965805, 11.755669564448615, 18.3282741983013, 20.474183696094276, 12.002776833533506, 1.172027385012641, 3.486776064209988, 11.749578653289936, 21.64177673390607, 20.621191850206745, 12.58175914235089, 4.482597479473307, 3.4634842734113978, 13.79859664818043, 21.955290849320697, 22.75273666152362, 13.278162493663277, 6.425947505433134, 6.144947940585117, 14.221974975280633, 23.892211194937943, 24.72000919920304, 16.791175513497983, 4.966169591715435, 7.622877773778123, 16.06506850851328, 24.36639325765802, 23.653589102867308, 17.45718861347321, 6.478007968711121, 8.50669142789039, 18.101867996202653, 24.060584749792916, 25.55773619736115, 16.090783182483847, 9.183800070191557, 10.654121092830257, 20.023556029172234, 25.082139594960843, 26.485305032123396, 19.30354509333099, 11.719118614248844, 10.760956606433933, 18.453848002409256, 28.357385547481766, 28.243634836863585, 19.596259277611836, 10.605274863608166, 11.927005718098608, 20.7078796263657, 29.16726991026801, 29.238566098143718, 19.715083429460265, 12.053570295014193, 13.946195633502207, 21.409441743133932, 29.020556721006198, 31.994696844795666, 22.730265408482932, 15.847832990780965, 14.002258131547318, 22.33861542094819, 30.21260933906888, 33.18409240790827, 25.969511512990596, 14.118811024931754, 14.492658321931362], "dd_acf": [1.0, 0.02502014999924718, -0.38261949750640245, -0.14449348240886933, -0.13395447357908485, -0.38591201760726584, 0.09395776157881296, 0.8582676095762611, 0.08693988925886158, -0.3744655318497654, -0.14108604062520944, -0.13895438204573307, -0.38072984091477596, 0.09023246972554444, 0.856350711027581, 0.09002006153020775, -0.3776448118167732, -0.1418726034181477, -0.1376830543048788, -0.3712715717903582, 0.08541559342117357, 0.8466196545166973, 0.09433957021029843, -0.38055642833908176, -0.13091713011758202, -0.15033118208837987, -0.36107155462415, 0.0824564508778065, 0.8527149096375931, 0.0758481677361965, -0.36500269753251596], "units": [651, 634, 670, 709, 744, 741, 824, 760, 934, 1149, 1277, 1046, 685, 728, 817, 779, 901, 855, 925, 945, 1112, 1447, 1569, 1381, 936, 906, 1019, 1035, 1111, 1069, 1153, 1182, 1431, 1623, 1916, 1556, 1111, 1081, 1196, 1219, 1187, 1232, 1248, 1348, 1641, 1938, 2038, 1690, 1186, 1105, 1185, 1303, 1417, 1363, 1287, 1462, 1641, 1990, 2270, 1667, 1197, 1225, 1211, 1428, 1442, 1439, 1433, 1582, 1799, 2131, 2395, 2004, 1319, 1326, 1402, 1512, 1620, 1478, 1623, 1813, 1884, 2262, 2568, 2191, 1461, 1507, 1577, 1655, 1729, 1817, 1758, 1744, 2264, 2588, 2895, 2558, 1584, 1595, 1664, 1810, 1997, 1997, 2102, 2084, 2272, 2982, 3197, 2758, 1911, 1856, 2002, 2080, 2203, 2083, 2271, 2423, 2800, 3284, 3720, 3019, 2059, 2079, 1963, 2101, 2214, 2101, 2347, 2583, 2841, 3503, 3952, 3337, 2168, 2258, 2300, 2360, 2519, 2440, 2642, 2820, 3350, 4175, 4162, 3717], "comp": [10, 11, 11, 11, 14, 12, 13, 13, 15, 20, 21, 18, 13, 13, 13, 13, 16, 14, 17, 17, 19, 24, 30, 26, 15, 15, 18, 16, 19, 18, 20, 19, 21, 25, 29, 26, 18, 20, 21, 19, 22, 20, 22, 24, 28, 31, 38, 27, 20, 24, 21, 24, 23, 24, 24, 24, 26, 34, 34, 32, 22, 21, 21, 24, 24, 25, 22, 26, 26, 32, 44, 36, 22, 20, 19, 24, 32, 27, 27, 30, 29, 39, 44, 36, 26, 25, 27, 26, 31, 32, 28, 30, 40, 44, 54, 40, 32, 29, 30, 35, 33, 31, 34, 38, 38, 53, 53, 50, 27, 30, 29, 33, 37, 36, 38, 40, 47, 53, 65, 54, 36, 36, 37, 43, 39, 38, 39, 40, 45, 56, 64, 55, 37, 35, 42, 44, 43, 42, 48, 49, 50, 67, 76, 59], "N": 131, "sims_acf_a": [1.0, 0.08545913178006734, -0.1334789548319705, -0.14588614363513155, 0.07945428966924832, -0.013488739448107826, -0.08769842282659765, 0.15614615952473007, -0.013227322093608206, 0.0403652699493684, -0.07304424303274099, -0.09822413403827926, -0.08604867437380978, -0.03291540965838399, 0.0537614170987384, -0.08135979684349844, -0.07120804574513857, 0.05463534553662367, -0.014616928993176594, -0.07167772594717511, -0.08126164554102865, 0.08493802940721037, -0.0005068853981761318, 0.050985643143570826, -0.037312377736358586, 0.022569831310929864, 0.05162237510865723, 0.06831223549510404, -0.048558315280484175, -0.09439294885904734, 0.02210079923127289, 0.057741275139859195, 0.010589822818254813, -0.17413921342142386, 0.10886350847527768, 0.07227267385026213, 0.0559489577640502, -0.09512221549744238, -0.007402693894413826, -0.007823872167817592, -0.13241832276558493]};
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+const nf=(n,d)=>n.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const C={o:"#B8530F",a:"#C98A1E",b:"#5B4330",r:"#8A3410",g:"#9A8B72",ink:"#33291E"};
+
+/* progress + nav */
+const prog=$("#prog"),links=$$(".topbar a"),secs=links.map(a=>$(a.getAttribute("href")));
+function onScroll(){const h=document.documentElement;prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%";let cur=-1;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<120)cur=i});links.forEach((a,i)=>a.classList.toggle("active",i===cur))}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+/* date helpers */
+const mLabel=(y0,m0,i)=>new Date(Date.UTC(y0,m0+i,1)).toLocaleDateString("en-US",{month:"short",year:"numeric",timeZone:"UTC"});
+const dLabel=(i,base=Date.UTC(2016,0,1))=>new Date(base+i*864e5).toLocaleDateString("en-US",{weekday:"short",day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const monthLabels=(y0,m0,n)=>Array.from({length:n},(_,i)=>mLabel(y0,m0,i));
+const yearTicks=(y0,m0,n)=>{const t=[];for(let i=0;i<n;i++){const d=new Date(Date.UTC(y0,m0+i,1));if(d.getUTCMonth()===0)t.push({i,label:String(d.getUTCFullYear())})}return t};
+
+/* nice ticks */
+function niceTicks(lo,hi,k){const raw=(hi-lo)/k,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,s=(f<1.5?1:f<3?2:f<7?5:10)*p;const t=[];for(let v=Math.ceil(lo/s)*s;v<=hi+1e-9;v+=s)t.push(+v.toFixed(10));return t}
+const tickFmt=(v,step)=>Math.abs(v)>=1000?fmt(v):(Math.abs(v)<10?nf(v,v%1?2:0):nf(v,Math.abs(v)<100&&v%1?1:0));
+
+function legend(root,series){root.innerHTML='<div class="lg">'+series.map(s=>`<span><svg width="30" height="10" aria-hidden="true"><line x1="0" y1="5" x2="30" y2="5" stroke="${s.color}" stroke-width="${s.w||2.5}" stroke-dasharray="${s.dash||""}" opacity="${s.op||1}"/></svg>${s.name}</span>`).join("")+"</div>"}
+
+/* line chart */
+function lineChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=12,pb=o.noX?8:26,N=o.labels.length;
+  let lo=Infinity,hi=-Infinity;o.series.forEach(s=>s.y.forEach(v=>{if(v!=null&&isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  (o.bands||[]).forEach(b=>b.lo.concat(b.hi).forEach(v=>{if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;const pad=(hi-lo)*.06||1;if(o.ymin==null)lo-=pad;if(o.ymax==null)hi+=pad;
+  const x=i=>pl+i*(W-pl-pr)/(N-1),y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb);
+  root.innerHTML='<div class="chw"><div class="tip"></div></div>';const wrap=$(".chw",root),tip=$(".tip",wrap);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Line chart",tabindex:0});wrap.insertBefore(svg,tip);
+  niceTicks(lo,hi,o.yt||4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9","stroke-width":1},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  (o.bands||[]).forEach(b=>{let d="";const idx=b.lo.map((_,i)=>i).filter(i=>b.lo[i]!=null);idx.forEach((i,k)=>{d+=(k?"L":"M")+x(i)+" "+y(b.hi[i])});idx.slice().reverse().forEach(i=>{d+="L"+x(i)+" "+y(b.lo[i])});el("path",{d:d+"Z",fill:b.color||"#D9792B","fill-opacity":.25,stroke:"none"},svg)});
+  if(o.zero&&lo<0&&hi>0)el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  (o.xt||[]).forEach(t=>{el("line",{x1:x(t.i),x2:x(t.i),y1:H-pb,y2:H-pb+4,stroke:"#66573F"},svg);const e=el("text",{x:x(t.i),y:H-8,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);e.textContent=t.label});
+  (o.vlines||[]).forEach(v=>{el("line",{x1:x(v.i),x2:x(v.i),y1:pt,y2:H-pb,stroke:v.color||C.r,"stroke-width":2,"stroke-dasharray":v.dash||"6 4"},svg);if(v.label){const t=el("text",{x:x(v.i)+4,y:pt+11,"font-size":11.5,"font-weight":700,fill:v.color||C.r},svg);t.textContent=v.label}});
+  o.series.forEach(s=>{let d="",pen=false;s.y.forEach((v,i)=>{if(v==null||!isFinite(v)){pen=false;return}d+=(pen?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1);pen=true});
+    el("path",{d,fill:"none",stroke:s.color,"stroke-width":s.w||2.5,"stroke-dasharray":s.dash||"",opacity:s.op||1,"stroke-linejoin":"round"},svg)});
+  (o.marks||[]).forEach(m=>{el("circle",{cx:x(m.i),cy:y(m.v),r:6,fill:m.color||C.r,stroke:"#FFFBF1","stroke-width":2},svg);if(m.label){const t=el("text",{x:x(m.i)+(m.dx||9),y:y(m.v)+(m.dy||4),"font-size":11.5,"font-weight":700,fill:m.color||C.r,"text-anchor":m.anchor||"start"},svg);t.textContent=m.label}});
+  const g=el("g",{style:"display:none"},svg),gl=el("line",{y1:pt,y2:H-pb,stroke:"#33291E","stroke-width":1,"stroke-dasharray":"3 3"},g),dots=o.series.map(s=>el("circle",{r:4,fill:s.color,stroke:"#FFFBF1","stroke-width":1.5},g));
+  let cur=Math.floor(N/2);
+  function show(i){cur=i;g.style.display="";const px=x(i);gl.setAttribute("x1",px);gl.setAttribute("x2",px);
+    let h=`<b>${o.labels[i]}</b>`;o.series.forEach((s,k)=>{const v=s.y[i];if(v==null||!isFinite(v)){dots[k].style.display="none";return}dots[k].style.display="";dots[k].setAttribute("cx",px);dots[k].setAttribute("cy",y(v));h+=`<br>${s.name}: ${(o.vFmt||fmt)(v)}`});
+    tip.innerHTML=h;tip.style.display="block";const pct=px/W*100;tip.style.left=pct>60?"auto":`calc(${pct}% + 10px)`;tip.style.right=pct>60?`calc(${100-pct}% + 10px)`:"auto";tip.style.top="0";
+    o.onHover&&o.onHover(i)}
+  svg.addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*W;show(Math.max(0,Math.min(N-1,Math.round((px-pl)/(W-pl-pr)*(N-1)))))});
+  svg.addEventListener("pointerleave",()=>{g.style.display="none";tip.style.display="none"});
+  svg.addEventListener("keydown",e=>{if(e.key==="ArrowRight"){show(Math.min(N-1,cur+1));e.preventDefault()}if(e.key==="ArrowLeft"){show(Math.max(0,cur-1));e.preventDefault()}});
+  svg.addEventListener("blur",()=>{g.style.display="none";tip.style.display="none"});
+}
+/* bar chart (grouped) */
+let barId=0;
+function barChart(root,o){
+  const W=720,H=o.h||240,pl=58,pr=14,pt=22,pb=28,N=o.labels.length,ns=o.series.length,id="h"+(barId++);
+  let lo=Math.min(0,...o.series.flatMap(s=>s.v)),hi=Math.max(0,...o.series.flatMap(s=>s.v));if(o.ymin!=null)lo=o.ymin;if(o.ymax!=null)hi=o.ymax;if(o.hline)hi=Math.max(hi,o.hline.v);const pad=(hi-lo)*.08;hi+=pad;if(lo<0)lo-=pad;
+  const y=v=>pt+(1-(v-lo)/(hi-lo))*(H-pt-pb),gw=(W-pl-pr)/N,bw=gw*.78/ns;
+  root.innerHTML="";const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Bar chart"});root.appendChild(svg);
+  const defs=el("defs",{},svg),pat=el("pattern",{id,width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"},defs);el("rect",{width:6,height:6,fill:"#F5DDBD"},pat);el("rect",{width:3,height:6,fill:C.b},pat);
+  niceTicks(lo,hi,4).forEach(v=>{el("line",{x1:pl,x2:W-pr,y1:y(v),y2:y(v),stroke:"#D6C7A9"},svg);const t=el("text",{x:pl-7,y:y(v)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);t.textContent=(o.yFmt||tickFmt)(v)});
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  if(o.hline){el("line",{x1:pl,x2:W-pr,y1:y(o.hline.v),y2:y(o.hline.v),stroke:"#8A3410","stroke-width":2.5,"stroke-dasharray":"6 4"},svg);const ht=el("text",{x:W-pr-4,y:y(o.hline.v)-5,"text-anchor":"end","font-size":12,"font-weight":700,fill:"#8A3410"},svg);ht.textContent=o.hline.label||""}
+  o.labels.forEach((l,i)=>{const t=el("text",{x:pl+gw*(i+.5),y:H-9,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);t.textContent=l;
+    o.series.forEach((s,k)=>{const v=s.v[i];if(v==null)return;const bx=pl+gw*i+gw*.11+bw*k,y0=y(0),y1=y(v);
+      const r=el("rect",{x:bx,y:Math.min(y0,y1),width:bw,height:Math.max(1,Math.abs(y1-y0)),fill:s.hatch?`url(#${id})`:s.color,stroke:s.hatch?C.b:"none"},svg);el("title",{},r).textContent=`${l}: ${(o.vFmt||fmt)(v)}`;
+      if(o.labelsOn!==false&&ns<=2){const t2=el("text",{x:bx+bw/2,y:(v>=0?y1-4:y1+12),"text-anchor":"middle","font-size":ns>1?9.5:11,fill:C.ink},svg);t2.textContent=(o.vFmt||fmt)(v)}})});
+}
+
+const U=D.units,N=U.length,LAB=monthLabels(2012,0,N),MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const sum=a=>a.reduce((x,y)=>x+y,0),avg=a=>sum(a)/a.length;
+const sd=a=>{const m=avg(a);return Math.sqrt(sum(a.map(v=>(v-m)**2))/(a.length-1))};
+const YT=yearTicks(2012,0,N);
+
+/* stem chart for ACF / PACF */
+function stem(root,o){
+  const v=o.vals,W=720,H=o.h||230,pl=46,pr=14,pt=14,pb=34,K=v.length-1;
+  const x=k=>pl+(k-.5)/K*(W-pl-pr),lo=Math.min(-1,...v)<-.99?-1:Math.min(-.6,...v)-.05,hi=1,y=t=>pt+(1-(t-lo)/(hi-lo))*(H-pt-pb);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":o.aria||"Autocorrelation chart"});
+  niceTicks(lo,hi,5).forEach(t=>{el("line",{x1:pl,x2:W-pr,y1:y(t),y2:y(t),stroke:"#E3D7BC"},svg);const tx=el("text",{x:pl-6,y:y(t)+4,"text-anchor":"end","font-size":11.5,fill:"#66573F"},svg);tx.textContent=nf(t,1)});
+  if(o.band!=null)el("rect",{x:pl,y:y(o.band),width:W-pl-pr,height:y(-o.band)-y(o.band),fill:"#D9792B","fill-opacity":.16},svg);
+  el("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),stroke:"#66573F","stroke-width":1.2},svg);
+  for(let k=1;k<=K;k++){if(k%(o.every||6)===0||k===1){const tx=el("text",{x:x(k),y:H-14,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=k}}
+  const xl=el("text",{x:(pl+W-pr)/2,y:H-1,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);xl.textContent="lag (months)";
+  for(let k=1;k<=K;k++){const val=v[k],out=o.band!=null&&Math.abs(val)>o.band,hl=o.hl&&o.hl.includes(k);
+    const g=el("g",{},svg);el("title",{},g).textContent=`lag ${k}: ${nf(val,3)}${out?" (outside the band)":""}`;
+    el("line",{x1:x(k),x2:x(k),y1:y(0),y2:y(val),stroke:out?C.o:C.g,"stroke-width":out?3.2:2.2,"stroke-dasharray":out?"":"0"},g);
+    el("circle",{cx:x(k),cy:y(val),r:out?4.5:3.2,fill:out?C.o:"#FFFBF1",stroke:out?C.o:C.g,"stroke-width":1.6},g);
+    if(hl){const t=el("text",{x:x(k),y:val>=0?y(val)-9:y(val)+17,"text-anchor":"middle","font-size":11.5,"font-weight":700,fill:C.r},g);t.textContent=nf(val,2)}}
+  root.replaceChildren(svg);
+}
+const pts=(arr,start)=>arr.map((_,i)=>String(start+i));
+
+/* ---------- 1 cold open ---------- */
+(function(){
+  lineChart($("#o_mean"),{labels:LAB,xt:YT,series:[{name:"12-month mean",y:D.roll.mean,color:C.o,w:2.8}],h:190,aria:"12-month rolling mean of units"});
+  lineChart($("#o_std"),{labels:LAB,xt:YT,series:[{name:"12-month std",y:D.roll.std,color:C.b,w:2.8}],h:190,aria:"12-month rolling standard deviation"});
+  let h="<tr><th>Year</th><th class='num'>Mean units</th><th class='num'>Std</th></tr>";
+  [2012,2017,2023].forEach(yr=>{const a=U.slice((yr-2012)*12,(yr-2012)*12+12);h+=`<tr><td>${yr}</td><td class="num">${fmt(avg(a))}</td><td class="num">${fmt(sd(a))}</td></tr>`});
+  $("#o_tab").innerHTML=h;
+})();
+
+/* ---------- 2 six series ---------- */
+const NAMES={a:"pure noise",b:"trend + noise",c:"yearly wave + noise",d:"random walk",e:"growing spread",f:"short memory"};
+const STAT={a:true,b:false,c:false,d:false,e:false,f:true},PV={a:0,b:.7907,c:.0068,d:.8287,e:0,f:0};
+const PVT={a:"0.0000",b:"0.7907",c:"0.0068",d:"0.8287",e:"0.0000",f:"0.0000"};
+(function(){
+  const g=$("#s_grid");
+  Object.keys(D.sims).forEach(k=>{const d=document.createElement("div");d.innerHTML=`<div class="ct" style="font-size:14px">${k} <span class="sub" id="sv_${k}"></span></div><div id="sp_${k}"></div>`;g.appendChild(d);
+    lineChart($("#sp_"+k),{labels:D.sims[k].map((_,i)=>"t = "+i),xt:[0,36,72,108].map(i=>({i,label:String(i)})),series:[{name:k,y:D.sims[k],color:C.o,w:2}],h:150,aria:"Simulated series "+k})});
+  const R=D.simtab,keys=Object.keys(R);let rev=false;
+  function tab(){
+    $("#s_tab").innerHTML="<tr><th>Series</th><th class='num'>Mean 1st half</th><th class='num'>Mean 2nd half</th><th class='num'>Std 1st half</th><th class='num'>Std 2nd half</th><th class='num'>Range of monthly means</th></tr>"+keys.map(k=>`<tr><td>${k} · ${NAMES[k]}</td>${R[k].slice(0,5).map(v=>`<td class="num">${nf(v,2)}</td>`).join("")}</tr>`).join("");
+    keys.forEach(k=>{$("#sv_"+k).textContent=rev?(STAT[k]?"· stationary":"· not stationary"):""});
+    $("#s_tab").style.opacity=rev?1:.25;$("#s_rev").setAttribute("aria-pressed",rev);$("#s_rev").textContent=rev?"Hide the numbers":"Reveal what the numbers say"}
+  $("#s_rev").onclick=()=>{rev=!rev;tab()};tab();
+})();
+
+/* ---------- 3 ADF ---------- */
+(function(){
+  const rows=[...Object.keys(PVT).map(k=>[k+" · "+NAMES[k],+PVT[k]]),["Lanternly units",0.996]];
+  const sl=$("#a_th");
+  function draw(){const T=+sl.value;$("#a_tho").textContent=nf(T,2);
+    const W=720,rh=30,H=rows.length*rh+30,pl=190,pr=70,x=v=>pl+v*(W-pl-pr);
+    const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"ADF p-values"});
+    [0,.25,.5,.75,1].forEach(t=>{el("line",{x1:x(t),x2:x(t),y1:4,y2:H-22,stroke:"#E3D7BC"},svg);const tx=el("text",{x:x(t),y:H-6,"text-anchor":"middle","font-size":11.5,fill:"#66573F"},svg);tx.textContent=t});
+    rows.forEach(([n,p],i)=>{const y=8+i*rh,ok=p<T;const t=el("text",{x:pl-8,y:y+17,"text-anchor":"end","font-size":13,fill:C.ink},svg);t.textContent=n;
+      el("rect",{x:pl,y:y+3,width:Math.max(2,x(p)-pl),height:20,rx:4,fill:ok?C.o:"#F5DDBD",stroke:ok?"none":C.b,"stroke-dasharray":ok?"":"4 3"},svg);
+      const v=el("text",{x:x(p)+6,y:y+18,"font-size":12.5,"font-weight":700,fill:C.ink},svg);v.textContent=nf(p,4)+(ok?" ✓ stationary":"")});
+    el("line",{x1:x(T),x2:x(T),y1:2,y2:H-22,stroke:C.r,"stroke-width":2.5,"stroke-dasharray":"6 4"},svg);
+    $("#a_bars").replaceChildren(svg)}
+  sl.addEventListener("input",draw);draw();
+})();
+
+/* ---------- 4 differencing ---------- */
+(function(){
+  const ly=U.map(Math.log),diff=(a,k)=>a.map((v,i)=>i>=k&&a[i-k]!=null&&v!=null?v-a[i-k]:null);
+  const S=[
+   {n:"Raw units",y:U,p:.996,s:[357,677],msg:"p = 0.996: not stationary. A trend, a yearly cycle and a growing spread."},
+   {n:"diff(1)",y:diff(U,1),p:.034,s:[198,425],msg:"p = 0.034: it passes the test, but the spread more than doubles (198 to 425 units) and the yearly cycle is still there. The test passed, the series is not clean."},
+   {n:"diff(12)",y:diff(U,12),p:.438,s:[92,149],msg:"p = 0.44: it fails. The seasonal difference removes the cycle but leaves the trend in the growth."},
+   {n:"diff(1).diff(12)",y:diff(diff(U,1),12),p:.005,s:[93,164],msg:"p = 0.005: stationary by the test, but the spread still grows from 93 to 164 units because the swings grow with the level."},
+   {n:"log, diff(1).diff(12)",y:diff(diff(ly,1),12),p:.0018,s:[.0673,.0635],msg:"p = 0.0018 and a steady spread (0.067 and 0.064). This is the cleanest version: the multiplicative idea from Class 4 in a new form, the log turns ratios into differences."}];
+  let k=4;const bx=$("#d_btns");
+  S.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.n;b.onclick=()=>{k=i;draw()};bx.appendChild(b)});
+  function draw(){const s=S[k];
+    lineChart($("#d_chart"),{labels:LAB,xt:YT,series:[{name:s.n,y:s.y,color:C.o,w:2.4}],zero:k>0,h:240,aria:"Series after "+s.n});
+    const left=s.y.filter(v=>v!=null).length,f=v=>v<1?nf(v,3):fmt(v);
+    $("#d_kpi").innerHTML=`<div><b>Points left</b><span>${left}</span></div><div><b>ADF p-value</b><span>${nf(s.p,4)}</span></div><div><b>Std, first 4 years</b><span>${f(s.s[0])}</span></div><div><b>Std, last 4 years</b><span>${f(s.s[1])}</span></div>`;
+    $("#d_msg").textContent=s.msg;$$("button",bx).forEach((b,i)=>b.setAttribute("aria-pressed",i===k))}
+  draw();
+  $("#d_tab").innerHTML="<tr><th>Series</th><th class='num'>Points</th><th class='num'>ADF p</th><th class='num'>Std first 4 y</th><th class='num'>Std last 4 y</th></tr>"+D.cand.map(r=>`<tr${r[0].startsWith("log")?' class="best"':""}><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${nf(r[2],4)}</td><td class="num">${r[3]<1?nf(r[3],3):nf(r[3],0)}</td><td class="num">${r[4]<1?nf(r[4],3):nf(r[4],0)}</td></tr>`).join("");
+})();
+
+/* ---------- 5 ACF ---------- */
+(function(){
+  const bandN=1.96/Math.sqrt(D.N);
+  const V={raw:{v:D.acf_raw,b:null,msg:"Raw units: the bars start near 0.9 and shrink very slowly. A slow decay is the signature of a trend, and the ACF of a non-stationary series is not very informative.",hl:[1,12]},
+   d1:{v:D.acf_d1,b:1.96/Math.sqrt(143),msg:"After diff(1): the trend is gone and the yearly cycle shows. The autocorrelation is 0.811 at lag 12 and 0.718 at lag 24, with smaller peaks at the other multiples of 12. At lag 6 it is only 0.053, so no strong half-year cycle exists here.",hl:[12,24]},
+   st:{v:D.acf,b:bandN,msg:"After log, diff(1) and diff(12): the large bars are gone. What is left is a negative bar at lag 1 (−0.455), a negative bar at lag 12 (−0.480) and a positive bar at lag 13 (0.385). That is the memory of the stationary series.",hl:[1,12,13]}};
+  let k="st";
+  function draw(){const s=V[k];stem($("#f_chart"),{vals:s.v,band:s.b,hl:s.hl,aria:"ACF, "+k});$("#f_msg").textContent=s.msg;$$("#f_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k))}
+  $$("#f_btns button").forEach(b=>b.onclick=()=>{k=b.dataset.k;draw()});draw();
+})();
+
+/* ---------- 6 PACF ---------- */
+(function(){
+  const rows=[["By hand (residuals of lag 1)",-0.418],["statsmodels pacf, method='ols'",-0.416],["statsmodels pacf, default (ywm)",-0.409],["Plain autocorrelation at lag 2",-0.111]];
+  barChart($("#p_bars"),{labels:rows.map(r=>r[0].replace("statsmodels ","")),series:[{name:"lag 2",v:rows.map(r=>r[1]),color:C.o}],h:210,vFmt:v=>nf(v,3),yFmt:v=>nf(v,1),aria:"Lag 2 partial autocorrelation computed three ways, against the plain autocorrelation"});
+  const bandN=1.96/Math.sqrt(D.N);
+  const V={raw:{v:D.pacf_raw,b:1.96/Math.sqrt(144),hl:[1],msg:"Raw units: a big bar at lag 1 (0.895) says that this month is almost determined by last month, and a series of other bars follows around lags 9 to 13."},
+   st:{v:D.pacf,b:bandN,hl:[1,2,4,11,12],msg:"Stationary series: the largest bars are lag 1 (−0.458), lag 2 (−0.409), lag 11 (0.365) and lag 12 (−0.334), while lag 3 is about 0.003. Lag 4 (−0.220) is also just outside the band. The short-range memory is concentrated in the first two lags, and the yearly memory is at lags 11 and 12."}};
+  let k="st";
+  function draw(){const s=V[k];stem($("#q_chart"),{vals:s.v,band:s.b,hl:s.hl,every:4,aria:"PACF, "+k});$("#q_msg").textContent=s.msg;$$("#q_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k))}
+  $$("#q_btns button").forEach(b=>b.onclick=()=>{k=b.dataset.k;draw()});draw();
+})();
+
+/* ---------- 7 bands & period ---------- */
+(function(){
+  const sl=$("#b_n");
+  function bd(){const n=+sl.value;$("#b_no").textContent=n;const b=1.96/Math.sqrt(n);$("#b_kpi").innerHTML=`<div><b>N</b><span>${n}</span></div><div><b>Band ±1.96/√N</b><span>±${nf(b,3)}</span></div><div><b>Chance crossings in 40 lags</b><span>≈ ${nf(2,0)}</span></div>`}
+  sl.addEventListener("input",bd);bd();
+  const na=D.sims_acf_a;
+  stem($("#b_noise"),{vals:na,band:1.96/12,every:5,aria:"ACF of pure noise with its band"});
+  const P={lan:{v:D.acf_d1.slice(0,25),b:null,every:3,hl:[12],msg:"Lanternly (de-trended, diff(1)): the strongest ACF peak for lags 2 to 24 is at lag 12 (0.81), so m = 12, as we assumed from the calendar."},
+   day:{v:D.dd_acf,b:null,every:3,hl:[7,14],msg:"Daily series with a weekly pattern (diff(1)): the strongest peak for lags 2 to 30 is at lag 7, with 0.86 at both lag 7 and lag 14."},
+   my:{v:D.my_acf,b:null,every:3,hl:[6],msg:"Mystery series (diff(1)): the strongest peak for lags 2 to 24 is at lag 6 (0.91), so the pattern repeats every 6 steps."}};
+  let k="lan";
+  function draw(){const s=P[k];stem($("#m_chart"),{vals:s.v,band:s.b,hl:s.hl,every:s.every,aria:"ACF of the de-trended series, "+k});$("#m_msg").textContent=s.msg;$$("#m_btns button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k))}
+  $$("#m_btns button").forEach(b=>b.onclick=()=>{k=b.dataset.k;draw()});draw();
+})();
+
+/* ---------- 8 correlation ---------- */
+(function(){
+  const sl=$("#c_v"),ly=U.map(Math.log),lc=D.comp.map(Math.log);
+  const dif=(a,k)=>a.map((v,i)=>i>=k?v-a[i-k]:null);
+  const V=[{n:"Raw series",u:U,c:D.comp,r:D.corr3[0],m:"Both grow over the years and both peak in the festive season: correlation 0.983."},
+           {n:"After diff(1) only",u:dif(U,1),c:dif(D.comp,1),r:D.corr3[1],m:"The trend is gone, but the yearly wave is shared: correlation still 0.856."},
+           {n:"After log, diff(1) and diff(12)",u:dif(dif(ly,1),12),c:dif(dif(lc,1),12),r:D.corr3[2],m:"Trend and season removed: correlation 0.094, close to zero. The strong link was made of the two things the series have in common."}];
+  function draw(){const v=V[+sl.value];$("#c_vo").textContent=v.n;
+    lineChart($("#c_u"),{labels:LAB,xt:YT,series:[{name:"Units",y:v.u,color:C.o,w:2.2}],h:170,aria:"Units, "+v.n});
+    lineChart($("#c_c"),{labels:LAB,xt:YT,series:[{name:"Complaints",y:v.c,color:C.b,w:2.2}],h:170,aria:"Complaints, "+v.n});
+    $("#c_kpi").innerHTML=`<div><b>Correlation</b><span>${nf(v.r,3)}</span></div>`;$("#c_msg").textContent=v.m}
+  sl.addEventListener("input",draw);draw();
+  const F=[["Complaints only (given the future)",D.feat.c],["Time + month of year (known in advance)",D.feat.tm],["Time + month + complaints (given the future)",D.feat.tmc]];
+  barChart($("#c_feat"),{labels:["complaints only","time + month","time + month + complaints"],series:[{name:"MAPE",v:F.map(f=>f[1]),color:C.o}],h:210,ymin:0,vFmt:v=>nf(v,2)+"%",yFmt:v=>nf(v,0),aria:"Test MAPE of three regressions"});
+})();
+
+/* ---------- 9 AR ---------- */
+(function(){
+  const z=D.stat,idx=D.statidx;
+  let h="<tr><th>Month</th><th class='num'>y(t)</th><th class='num'>y(t−1)</th><th class='num'>y(t−2)</th><th class='num'>y(t−3)</th></tr>";
+  for(let i=3;i<7;i++)h+=`<tr><td>${idx[i]}</td>${[0,1,2,3].map(j=>`<td class="num">${nf(z[i-j],3)}</td>`).join("")}</tr>`;
+  $("#r_lag").innerHTML=h;
+  const A=D.ar;let p=2;
+  function draw(){const r=A[p-1];
+    $("#r_tab").innerHTML="<tr><th class='num'>p (lags)</th><th class='num'>R² (train)</th><th class='num'>AIC</th><th>Coefficients</th><th class='num'>Test MAE</th></tr>"+A.map(a=>`<tr${a[0]===p?' class="hl"':""}><td class="num">${a[0]}</td><td class="num">${nf(a[1],3)}</td><td class="num">${nf(a[2],1)}</td><td>${a[3].join(", ")}</td><td class="num">${nf(a[4],4)}</td></tr>`).join("");
+    $$("#r_btns button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.p===p))}
+  $$("#r_btns button").forEach(b=>b.onclick=()=>{p=+b.dataset.p;draw()});draw();
+  barChart($("#r_mae"),{labels:["no memory","p = 1","p = 2","p = 3"],series:[{name:"MAE",v:[D.base,A[0][4],A[1][4],A[2][4]],color:C.o}],h:200,ymin:0,vFmt:v=>nf(v,4),yFmt:v=>nf(v,2),aria:"One-step MAE on 2023"});
+  const lab=Array.from({length:12},(_,i)=>MN[i]+" 2023");
+  const ser=[{name:"Actual change",y:D.ar2act,color:C.ink,w:3},{name:"AR(2) one-step prediction",y:D.ar2pred,color:C.o,w:3}];
+  lineChart($("#r_chart"),{labels:lab,xt:lab.map((l,i)=>({i,label:MN[i]})).filter((_,i)=>i%2===0),series:ser,zero:true,h:220,aria:"AR(2) one-step predictions vs actual for 2023"});legend($("#r_lg"),ser);
+})();
+
+/* ---------- quizzes ---------- */
+const Q=[
+ {q:"The ADF test on a sales series returns a p-value of 0.62. What is the correct conclusion?",o:["The series is stationary, because the p-value is larger than the 0.05 threshold","The series has a trend, and the test has measured the exact slope of it","There is no evidence against a unit root, so we treat the series as non-stationary","The series is stationary at the 62% level, which is a lower confidence than usual here"],a:2,e:"The null hypothesis of the ADF test is a unit root, and a p-value above 0.05 means we cannot reject it, so we proceed as if the series is non-stationary and try differencing. A large p-value is the opposite of a stationary verdict (A). The test does not estimate a trend slope, it tests the coefficient γ on the previous value (B). The p-value is not a confidence level of stationarity, it is the probability of seeing such a statistic if the null were true (D)."},
+ {q:"A monthly series has a rising trend and a yearly cycle of 12 months. Which operation removes only the yearly cycle?",o:["Subtracting the value from 12 months earlier, which is a seasonal difference","Subtracting the value from the previous month, which is a plain first difference","Dividing every value by the average of the whole series, which rescales it","Taking a 3-month moving average, which smooths out the short-term noise"],a:0,e:"The difference y(t) − y(t−12) compares every month with the same month one year ago, so a pattern that repeats every 12 months cancels. A first difference removes a trend but not a yearly cycle, as the middle panel showed (B). Dividing by one constant changes the scale and keeps the trend and the cycle (C). A short moving average smooths noise and keeps both the trend and a yearly cycle (D)."},
+ {q:"The PACF of a stationary series is large at lags 1 and 2 and near zero after lag 2. What does this suggest?",o:["The series is not stationary, because a PACF must decay slowly to be valid","The series has a seasonal period of 2, because the PACF peaks at lag 2","The ACF must also be zero after lag 2, because both plots always show the same thing","Two past values carry the direct information, so a regression on two lags fits"],a:3,e:"A PACF that cuts off after lag 2 says that, once lags 1 and 2 are known, older values add no direct information, so a regression with two lags is a natural choice. A slow decay in the PACF is not a requirement, and a cut-off is exactly the pattern we look for (A). A seasonal period is found from peaks in the ACF at multiples of the period, and two adjacent lags are not a period (B). The ACF includes indirect links and usually decays gradually, so it does not have to be zero after lag 2 (C)."},
+ {q:"Daily ice cream sales and drownings at a beach are strongly correlated. What is the best reading for building a forecasting model?",o:["Ice cream causes drownings, so ice cream sales should be reduced to lower the risk of them","A hidden cause such as temperature drives both, so a better feature is temperature","The correlation is just a mistake of the data, so no model should be built here","Drownings cause ice cream sales, so we should use drownings as the main feature"],a:1,e:"Hot days increase swimming and ice cream sales together, so temperature is the common cause (a confounder). Features that come from this cause, such as temperature and visitor numbers, give a better and more useful model than the correlated variable. A correlation between two effects of one cause does not mean that ice cream causes drownings (A). The same reasoning rules out drownings causing ice cream sales (D). The correlation is real and can be used for prediction, but it is a weak basis when the confounder is available (C)."},
+ {q:"A stationary series has a PACF with significant bars at lags 1 and 2 only. Which model is the natural first choice?",o:["An AR(2) model, regressing on the two previous values of the series","An AR(12) model, because monthly data always needs twelve lags","An AR(1) model, because the lag 1 bar is the largest of the two","No model, because a significant PACF means the series is a random walk"],a:0,e:"The PACF shows the direct information in each lag, and when it cuts off after lag 2 the regression with two lags captures it. Using twelve lags adds 10 features with no direct information, which risks overfitting, and 12 is not a rule for monthly data (B). Lag 2 is also significant, so dropping it throws away information, as the jump of R² from 0.216 to 0.354 in our data shows (C). A significant PACF indicates memory, which is what a regression can use, while a random walk is a different non-stationary case that the ADF test detects (D)."}];
+$$(".quiz").forEach(box=>{
+  const d=Q[+box.dataset.q];let done=false;
+  box.innerHTML=`<div class="ct" style="color:var(--rust);font-size:13px;letter-spacing:.1em;text-transform:uppercase">Check your understanding</div><div class="q"></div><div class="os"></div><div class="fb" role="status"></div>`;
+  $(".q",box).textContent=d.q;
+  d.o.forEach((t,i)=>{const b=document.createElement("button");b.className="opt";b.type="button";b.innerHTML="<b>"+"ABCD"[i]+".</b> ";b.appendChild(document.createTextNode(t));
+    b.onclick=()=>{const fb=$(".fb",box);if(i===d.a){done=true;b.classList.add("right");$$(".opt",box).forEach(x=>x.disabled=true);fb.innerHTML="<b>Correct.</b> ";fb.appendChild(document.createTextNode(d.e))}else{b.classList.add("wrong");b.disabled=true;fb.innerHTML="<b>Not quite — try another option.</b>"}fb.classList.add("show")};
+    $(".os",box).appendChild(b)});
+});
+
+})();
+</script>
+</body>
+</html>
